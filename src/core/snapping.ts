@@ -136,7 +136,7 @@ function compareCandidates(left: SnapCandidate, right: SnapCandidate): number {
   );
 }
 
-function hasLink(links: Link[], target: Link): boolean {
+function hasLink(links: readonly Link[], target: Link): boolean {
   return links.some(
     (link) =>
       link.dominoId1 === target.dominoId1 &&

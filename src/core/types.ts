@@ -46,6 +46,6 @@ export type Pair = {
 };
 
 export type BoardState = {
-  dominoes: Domino[];
-  links: Link[];
+  dominoes: readonly Domino[];
+  links: readonly Link[];
 };
