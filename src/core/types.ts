@@ -26,6 +26,11 @@ export type Link = {
   half2: DominoHalf;
 };
 
+export type Pair = {
+  a: string;
+  b: string;
+};
+
 export type BoardState = {
   dominoes: Domino[];
   links: Link[];
