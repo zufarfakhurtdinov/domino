@@ -3,7 +3,7 @@ import { detachDomino, rotateDomino } from "./core/board";
 import { moveConnectedGroup } from "./core/connections";
 import { getDominoCells, getOccupiedCells } from "./core/geometry";
 import { applySnap, findSnapCandidate } from "./core/snapping";
-import type { BoardState, Content, Domino, DominoHalf, Pair, Point, SnapCandidate } from "./core/types";
+import type { BoardState, Content, Domino, DominoHalf, Link, Pair, Point, SnapCandidate } from "./core/types";
 import "./styles.css";
 
 const cellWidth = 132;
@@ -77,6 +77,10 @@ function render(): void {
     renderDomino(domino);
   }
 
+  for (const link of state.links) {
+    renderDetachControl(link);
+  }
+
   if (currentSnapCandidate) {
     renderSnapHighlight(currentSnapCandidate);
   }
@@ -97,9 +101,6 @@ function renderDomino(domino: Domino): void {
 
   renderHalf(group, { x: 0, y: 0 }, domino.a, "a");
   renderHalf(group, { x: 1, y: 0 }, domino.b, "b");
-  if (isLinked(domino.id)) {
-    renderDetachControl(group, domino.id);
-  }
   renderRotateControl(group, domino);
   group.on("dragmove", () => {
     currentSnapCandidate = findSnapCandidate(getPreviewState(domino.id, group), domino.id, pairs, {
@@ -120,13 +121,15 @@ function renderDomino(domino: Domino): void {
   layer.add(group);
 }
 
-function renderDetachControl(
-  group: Konva.Group,
-  dominoId: string,
-): void {
+function renderDetachControl(link: Link): void {
+  const center = getLinkCenter(link);
+  if (!center) {
+    return;
+  }
+
   const control = new Konva.Group({
-    x: 18,
-    y: 18,
+    x: center.x,
+    y: center.y,
   });
 
   control.add(
@@ -155,12 +158,28 @@ function renderDetachControl(
 
   control.on("click tap", (event) => {
     event.cancelBubble = true;
-    state = detachDomino(state, dominoId);
+    state = detachDomino(state, link.dominoId1);
     currentSnapCandidate = null;
     render();
   });
 
-  group.add(control);
+  layer.add(control);
+}
+
+function getLinkCenter(link: Link): Point | null {
+  const first = state.dominoes.find((domino) => domino.id === link.dominoId1);
+  const second = state.dominoes.find((domino) => domino.id === link.dominoId2);
+  if (!first || !second) {
+    return null;
+  }
+
+  const firstCell = getDominoCells(first)[link.half1];
+  const secondCell = getDominoCells(second)[link.half2];
+
+  return {
+    x: boardPadding + ((firstCell.x + secondCell.x + 1) / 2) * cellWidth,
+    y: boardPadding + ((firstCell.y + secondCell.y + 1) / 2) * cellHeight,
+  };
 }
 
 function renderSnapHighlight(candidate: SnapCandidate | null): void {
@@ -376,10 +395,6 @@ function getCellBounds(cells: Point[]): { minX: number; minY: number; maxX: numb
     minY: Math.min(...cells.map((cell) => cell.y)),
     maxX: Math.max(...cells.map((cell) => cell.x)),
   };
-}
-
-function isLinked(dominoId: string): boolean {
-  return state.links.some((link) => link.dominoId1 === dominoId || link.dominoId2 === dominoId);
 }
 
 function createFixtureBoard(fixture: string | null): BoardState {

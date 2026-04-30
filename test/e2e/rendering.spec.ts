@@ -159,7 +159,7 @@ test("detaches linked dominoes from a canvas control", async ({ page }) => {
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
 
-  await page.mouse.click(appBox!.x + 182, appBox!.y + 50);
+  await page.mouse.click(appBox!.x + 164, appBox!.y + 70);
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.links).toEqual([]);
