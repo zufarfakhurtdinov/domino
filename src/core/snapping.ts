@@ -1,15 +1,6 @@
 import { getDominoCells, getOccupiedCells } from "./geometry";
 import { canMatch } from "./matching";
-import type { BoardState, Domino, DominoHalf, Pair, Point } from "./types";
-
-export type SnapCandidate = {
-  draggedDominoId: string;
-  draggedHalf: DominoHalf;
-  targetDominoId: string;
-  targetHalf: DominoHalf;
-  snappedPosition: Point;
-  distance: number;
-};
+import type { BoardState, Domino, DominoHalf, Link, Pair, Point, SnapCandidate } from "./types";
 
 export type SnapOptions = {
   threshold: number;
@@ -64,6 +55,26 @@ export function findSnapCandidate(
   }
 
   return candidates.sort(compareCandidates)[0] ?? null;
+}
+
+export function applySnap(state: BoardState, candidate: SnapCandidate): BoardState {
+  const nextLink: Link = {
+    dominoId1: candidate.draggedDominoId,
+    half1: candidate.draggedHalf,
+    dominoId2: candidate.targetDominoId,
+    half2: candidate.targetHalf,
+  };
+  const links = hasLink(state.links, nextLink) ? state.links : [...state.links, nextLink];
+
+  return {
+    ...state,
+    dominoes: state.dominoes.map((domino) =>
+      domino.id === candidate.draggedDominoId
+        ? { ...domino, x: candidate.snappedPosition.x, y: candidate.snappedPosition.y }
+        : domino,
+    ),
+    links,
+  };
 }
 
 const halves: DominoHalf[] = ["a", "b"];
@@ -122,6 +133,16 @@ function compareCandidates(left: SnapCandidate, right: SnapCandidate): number {
     left.targetDominoId.localeCompare(right.targetDominoId) ||
     left.targetHalf.localeCompare(right.targetHalf) ||
     left.draggedHalf.localeCompare(right.draggedHalf)
+  );
+}
+
+function hasLink(links: Link[], target: Link): boolean {
+  return links.some(
+    (link) =>
+      link.dominoId1 === target.dominoId1 &&
+      link.half1 === target.half1 &&
+      link.dominoId2 === target.dominoId2 &&
+      link.half2 === target.half2,
   );
 }
 

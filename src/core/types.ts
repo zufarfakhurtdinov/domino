@@ -31,6 +31,15 @@ export type Link = {
   half2: DominoHalf;
 };
 
+export type SnapCandidate = {
+  draggedDominoId: string;
+  draggedHalf: DominoHalf;
+  targetDominoId: string;
+  targetHalf: DominoHalf;
+  snappedPosition: Point;
+  distance: number;
+};
+
 export type Pair = {
   a: string;
   b: string;
