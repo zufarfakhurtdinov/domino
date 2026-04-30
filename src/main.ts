@@ -1,8 +1,9 @@
 import Konva from "konva";
 import { rotateDomino } from "./core/board";
 import { moveConnectedGroup } from "./core/connections";
-import { getDominoCells } from "./core/geometry";
-import type { BoardState, Content, Domino, DominoHalf, Point } from "./core/types";
+import { getDominoCells, getOccupiedCells } from "./core/geometry";
+import { applySnap, findSnapCandidate } from "./core/snapping";
+import type { BoardState, Content, Domino, DominoHalf, Pair, Point, SnapCandidate } from "./core/types";
 import "./styles.css";
 
 const cellWidth = 132;
@@ -11,7 +12,9 @@ const boardPadding = 32;
 const stageWidth = 720;
 const stageHeight = 420;
 
-let state = createFixtureBoard();
+const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
+let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
+let currentSnapCandidate: SnapCandidate | null = null;
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
@@ -31,6 +34,7 @@ render();
 
 window.__DOMINO_TEST__ = {
   getState: () => structuredClone(state),
+  getSnapCandidate: () => structuredClone(currentSnapCandidate),
 };
 
 function render(): void {
@@ -50,6 +54,10 @@ function render(): void {
     renderDomino(domino);
   }
 
+  if (currentSnapCandidate) {
+    renderSnapHighlight(currentSnapCandidate);
+  }
+
   layer.draw();
 }
 
@@ -65,15 +73,73 @@ function renderDomino(domino: Domino): void {
   renderHalf(group, toLocalCell(cells.a, domino), domino.a, "a");
   renderHalf(group, toLocalCell(cells.b, domino), domino.b, "b");
   renderRotateControl(group, domino, cells);
-  group.on("dragend", () => {
-    state = moveConnectedGroup(state, domino.id, {
-      x: Math.round((group.x() - boardPadding) / cellWidth),
-      y: Math.round((group.y() - boardPadding) / cellHeight),
+  group.on("dragmove", () => {
+    currentSnapCandidate = findSnapCandidate(getPreviewState(domino.id, group), domino.id, pairs, {
+      threshold: 0.4,
     });
+    renderSnapHighlight(currentSnapCandidate);
+  });
+  group.on("dragend", () => {
+    if (currentSnapCandidate) {
+      state = applySnap(state, currentSnapCandidate);
+    } else {
+      state = moveConnectedGroup(state, domino.id, getGroupBoardPosition(group));
+    }
+    currentSnapCandidate = null;
     render();
   });
 
   layer.add(group);
+}
+
+function renderSnapHighlight(candidate: SnapCandidate | null): void {
+  layer.find(".snap-highlight").forEach((node) => node.destroy());
+
+  if (!candidate) {
+    layer.batchDraw();
+    return;
+  }
+
+  const dragged = state.dominoes.find((domino) => domino.id === candidate.draggedDominoId);
+  if (!dragged) {
+    layer.batchDraw();
+    return;
+  }
+
+  const snappedDomino = {
+    ...dragged,
+    x: candidate.snappedPosition.x,
+    y: candidate.snappedPosition.y,
+  };
+
+  for (const cell of getOccupiedCells(snappedDomino)) {
+    layer.add(
+      new Konva.Rect({
+        x: boardPadding + cell.x * cellWidth + 4,
+        y: boardPadding + cell.y * cellHeight + 4,
+        width: cellWidth - 8,
+        height: cellHeight - 8,
+        stroke: "#16a34a",
+        strokeWidth: 4,
+        dash: [8, 5],
+        listening: false,
+        name: "snap-highlight",
+      }),
+    );
+  }
+
+  layer.batchDraw();
+}
+
+function getPreviewState(dominoId: string, group: Konva.Group): BoardState {
+  return moveConnectedGroup(state, dominoId, getGroupBoardPosition(group));
+}
+
+function getGroupBoardPosition(group: Konva.Group): Point {
+  return {
+    x: (group.x() - boardPadding) / cellWidth,
+    y: (group.y() - boardPadding) / cellHeight,
+  };
 }
 
 function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content: Content, half: DominoHalf): void {
@@ -166,7 +232,17 @@ function getCellBounds(cells: Point[]): { minY: number; maxX: number } {
   };
 }
 
-function createFixtureBoard(): BoardState {
+function createFixtureBoard(fixture: string | null): BoardState {
+  if (fixture === "snap") {
+    return {
+      dominoes: [
+        createDomino("dragged", text("cat_en", "cat"), text("free", "free"), 3, 0, 0),
+        createDomino("target", image("cat_img", "cat image"), text("anchor", "anchor"), 0, 0, 90),
+      ],
+      links: [],
+    };
+  }
+
   return {
     dominoes: [
       createDomino("cat", text("cat_en", "cat"), image("cat_img", "cat image"), 0, 0, 0),
