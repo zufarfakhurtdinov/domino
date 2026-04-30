@@ -8,6 +8,11 @@ export type Content = {
   value: string;
 };
 
+export type Point = {
+  x: number;
+  y: number;
+};
+
 export type DominoHalf = "a" | "b";
 
 export type Domino = {

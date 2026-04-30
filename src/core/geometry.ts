@@ -1,9 +1,4 @@
-import type { Domino, DominoHalf, Rotation } from "./types";
-
-export type Point = {
-  x: number;
-  y: number;
-};
+import type { Domino, DominoHalf, Point, Rotation } from "./types";
 
 export function rotateClockwise(rotation: Rotation): Rotation {
   return (((rotation + 90) % 360) as Rotation);
