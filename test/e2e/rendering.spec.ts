@@ -32,3 +32,15 @@ test("renders the fixed domino board to canvas", async ({ page }) => {
 
   expect(nonBackgroundPixels).toBeGreaterThan(1000);
 });
+
+test("rotates a domino by clicking its canvas rotate control", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+
+  const appBox = await page.locator("#app").boundingBox();
+  expect(appBox).not.toBeNull();
+
+  await page.mouse.click(appBox!.x + 278, appBox!.y + 50);
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((domino) => domino.id === "cat")?.rotation).toBe(90);
+});
