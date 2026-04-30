@@ -1,5 +1,6 @@
 import Konva from "konva";
 import { rotateDomino } from "./core/board";
+import { moveConnectedGroup } from "./core/connections";
 import { getDominoCells } from "./core/geometry";
 import type { BoardState, Content, Domino, DominoHalf, Point } from "./core/types";
 import "./styles.css";
@@ -54,18 +55,30 @@ function render(): void {
 
 function renderDomino(domino: Domino): void {
   const cells = getDominoCells(domino);
-  const group = new Konva.Group({ name: `domino-${domino.id}` });
+  const group = new Konva.Group({
+    x: boardPadding + domino.x * cellWidth,
+    y: boardPadding + domino.y * cellHeight,
+    name: `domino-${domino.id}`,
+    draggable: true,
+  });
 
-  renderHalf(group, cells.a, domino.a, "a");
-  renderHalf(group, cells.b, domino.b, "b");
+  renderHalf(group, toLocalCell(cells.a, domino), domino.a, "a");
+  renderHalf(group, toLocalCell(cells.b, domino), domino.b, "b");
   renderRotateControl(group, domino, cells);
+  group.on("dragend", () => {
+    state = moveConnectedGroup(state, domino.id, {
+      x: Math.round((group.x() - boardPadding) / cellWidth),
+      y: Math.round((group.y() - boardPadding) / cellHeight),
+    });
+    render();
+  });
 
   layer.add(group);
 }
 
 function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content: Content, half: DominoHalf): void {
-  const x = boardPadding + cell.x * cellWidth;
-  const y = boardPadding + cell.y * cellHeight;
+  const x = cell.x * cellWidth;
+  const y = cell.y * cellHeight;
 
   group.add(
     new Konva.Rect({
@@ -101,8 +114,8 @@ function renderRotateControl(
 ): void {
   const bounds = getCellBounds(Object.values(cells));
   const center = {
-    x: boardPadding + (bounds.maxX + 1) * cellWidth - 18,
-    y: boardPadding + bounds.minY * cellHeight + 18,
+    x: (bounds.maxX + 1 - domino.x) * cellWidth - 18,
+    y: (bounds.minY - domino.y) * cellHeight + 18,
   };
   const control = new Konva.Group({ x: center.x, y: center.y, name: `rotate-${domino.id}` });
 
@@ -137,6 +150,13 @@ function renderRotateControl(
   });
 
   group.add(control);
+}
+
+function toLocalCell(cell: Point, domino: Domino): Point {
+  return {
+    x: cell.x - domino.x,
+    y: cell.y - domino.y,
+  };
 }
 
 function getCellBounds(cells: Point[]): { minY: number; maxX: number } {
