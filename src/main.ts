@@ -86,19 +86,21 @@ function render(): void {
 
 function renderDomino(domino: Domino): void {
   const cells = getDominoCells(domino);
+  const transform = getVisualTransform(domino);
   const group = new Konva.Group({
-    x: boardPadding + domino.x * cellWidth,
-    y: boardPadding + domino.y * cellHeight,
+    x: transform.x,
+    y: transform.y,
+    rotation: domino.rotation,
     name: `domino-${domino.id}`,
     draggable: true,
   });
 
-  renderHalf(group, toLocalCell(cells.a, domino), domino.a, "a");
-  renderHalf(group, toLocalCell(cells.b, domino), domino.b, "b");
+  renderHalf(group, { x: 0, y: 0 }, domino.a, "a");
+  renderHalf(group, { x: 1, y: 0 }, domino.b, "b");
   if (isLinked(domino.id)) {
-    renderDetachControl(group, domino, cells);
+    renderDetachControl(group, domino.id);
   }
-  renderRotateControl(group, domino, cells);
+  renderRotateControl(group, domino);
   group.on("dragmove", () => {
     currentSnapCandidate = findSnapCandidate(getPreviewState(domino.id, group), domino.id, pairs, {
       threshold: 0.4,
@@ -120,14 +122,11 @@ function renderDomino(domino: Domino): void {
 
 function renderDetachControl(
   group: Konva.Group,
-  domino: Domino,
-  cells: Record<DominoHalf, Point>,
+  dominoId: string,
 ): void {
-  const bounds = getCellBounds(Object.values(cells));
   const control = new Konva.Group({
-    x: (bounds.minX - domino.x) * cellWidth + 18,
-    y: (bounds.minY - domino.y) * cellHeight + 18,
-    name: `detach-${domino.id}`,
+    x: 18,
+    y: 18,
   });
 
   control.add(
@@ -156,7 +155,7 @@ function renderDetachControl(
 
   control.on("click tap", (event) => {
     event.cancelBubble = true;
-    state = detachDomino(state, domino.id);
+    state = detachDomino(state, dominoId);
     currentSnapCandidate = null;
     render();
   });
@@ -208,9 +207,12 @@ function getPreviewState(dominoId: string, group: Konva.Group): BoardState {
 }
 
 function getGroupBoardPosition(group: Konva.Group): Point {
+  const rotation = normalizeRotation(group.rotation());
+  const origin = getVisualOriginForRotation(rotation, group.x(), group.y());
+
   return {
-    x: (group.x() - boardPadding) / cellWidth,
-    y: (group.y() - boardPadding) / cellHeight,
+    x: (origin.x - boardPadding) / cellWidth,
+    y: (origin.y - boardPadding) / cellHeight,
   };
 }
 
@@ -248,13 +250,8 @@ function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content:
 function renderRotateControl(
   group: Konva.Group,
   domino: Domino,
-  cells: Record<DominoHalf, Point>,
 ): void {
-  const bounds = getCellBounds(Object.values(cells));
-  const center = {
-    x: (bounds.maxX + 1 - domino.x) * cellWidth - 18,
-    y: (bounds.minY - domino.y) * cellHeight + 18,
-  };
+  const center = { x: cellWidth * 2 - 18, y: 18 };
   const control = new Konva.Group({ x: center.x, y: center.y, name: `rotate-${domino.id}` });
   rotateControlStates.set(domino.id, "default");
 
@@ -325,6 +322,52 @@ function toLocalCell(cell: Point, domino: Domino): Point {
     x: cell.x - domino.x,
     y: cell.y - domino.y,
   };
+}
+
+function getVisualTransform(domino: Domino): Point {
+  const origin = {
+    x: boardPadding + domino.x * cellWidth,
+    y: boardPadding + domino.y * cellHeight,
+  };
+
+  if (domino.rotation === 90) {
+    return { x: origin.x + cellHeight, y: origin.y };
+  }
+
+  if (domino.rotation === 180) {
+    return { x: origin.x + cellWidth * 2, y: origin.y + cellHeight };
+  }
+
+  if (domino.rotation === 270) {
+    return { x: origin.x, y: origin.y + cellWidth * 2 };
+  }
+
+  return origin;
+}
+
+function getVisualOriginForRotation(rotation: Domino["rotation"], x: number, y: number): Point {
+  if (rotation === 90) {
+    return { x: x - cellHeight, y };
+  }
+
+  if (rotation === 180) {
+    return { x: x - cellWidth * 2, y: y - cellHeight };
+  }
+
+  if (rotation === 270) {
+    return { x, y: y - cellWidth * 2 };
+  }
+
+  return { x, y };
+}
+
+function normalizeRotation(rotation: number): Domino["rotation"] {
+  const normalized = ((rotation % 360) + 360) % 360;
+  if (normalized === 90 || normalized === 180 || normalized === 270) {
+    return normalized;
+  }
+
+  return 0;
 }
 
 function getCellBounds(cells: Point[]): { minX: number; minY: number; maxX: number } {

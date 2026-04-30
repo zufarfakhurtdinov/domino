@@ -58,6 +58,53 @@ test("rotates a domino by clicking its canvas rotate control", async ({ page }) 
   expect(state.dominoes.find((domino) => domino.id === "cat")?.rotation).toBe(90);
 });
 
+test("renders a rotated domino as a rigid visual rotation", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+
+  const appBox = await page.locator("#app").boundingBox();
+  expect(appBox).not.toBeNull();
+
+  await page.mouse.click(appBox!.x + 278, appBox!.y + 50);
+
+  const footprint = await page.locator("#app canvas").first().evaluate((canvas) => {
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return null;
+    }
+
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (let y = 0; y < 260; y += 1) {
+      for (let x = 0; x < 320; x += 1) {
+        const index = (y * canvas.width + x) * 4;
+        const red = pixels[index];
+        const green = pixels[index + 1];
+        const blue = pixels[index + 2];
+        const isDominoPixel = !(red > 245 && green > 245 && blue > 245);
+
+        if (isDominoPixel) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    return {
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+    };
+  });
+
+  expect(footprint).not.toBeNull();
+  expect(footprint!.height / footprint!.width).toBeGreaterThan(2.4);
+});
+
 test("drags a domino across the canvas and updates board state", async ({ page }) => {
   await page.goto("http://127.0.0.1:5173/?fixture=basic");
 
