@@ -148,6 +148,64 @@ test("shows a snap candidate while dragging and applies it on release", async ({
   ]);
 });
 
+test("renders the snap highlight with the rigid rotated shape for a 90-degree domino", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/?fixture=snap-rotated");
+
+  const appBox = await page.locator("#app").boundingBox();
+  expect(appBox).not.toBeNull();
+
+  await page.mouse.move(appBox!.x + 470, appBox!.y + 160);
+  await page.mouse.down();
+  await page.mouse.move(appBox!.x + 210, appBox!.y + 160, { steps: 10 });
+
+  const candidate = await page.evaluate(() => window.__DOMINO_TEST__.getSnapCandidate());
+  expect(candidate).toMatchObject({
+    draggedDominoId: "dragged",
+    targetDominoId: "target",
+    snappedPosition: { x: 1, y: 0 },
+  });
+
+  const footprint = await page.locator("#app canvas").first().evaluate((canvas) => {
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return null;
+    }
+
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (let y = 0; y < 260; y += 1) {
+      for (let x = 0; x < 360; x += 1) {
+        const index = (y * canvas.width + x) * 4;
+        const red = pixels[index];
+        const green = pixels[index + 1];
+        const blue = pixels[index + 2];
+        const isHighlightPixel = green > 140 && red < 120 && blue < 160;
+
+        if (isHighlightPixel) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    return {
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+    };
+  });
+
+  expect(footprint).not.toBeNull();
+  expect(footprint!.height / footprint!.width).toBeGreaterThan(2.4);
+
+  await page.mouse.up();
+});
+
 test("detaches linked dominoes from a canvas control", async ({ page }) => {
   await page.goto("http://127.0.0.1:5173/?fixture=linked");
 

@@ -201,22 +201,30 @@ function renderSnapHighlight(candidate: SnapCandidate | null): void {
     x: candidate.snappedPosition.x,
     y: candidate.snappedPosition.y,
   };
+  const transform = getVisualTransform(snappedDomino);
+  const group = new Konva.Group({
+    x: transform.x,
+    y: transform.y,
+    rotation: snappedDomino.rotation,
+    listening: false,
+    name: "snap-highlight",
+  });
 
-  for (const cell of getOccupiedCells(snappedDomino)) {
-    layer.add(
-      new Konva.Rect({
-        x: boardPadding + cell.x * cellWidth + 4,
-        y: boardPadding + cell.y * cellHeight + 4,
-        width: cellWidth - 8,
-        height: cellHeight - 8,
-        stroke: "#16a34a",
-        strokeWidth: 4,
-        dash: [8, 5],
-        listening: false,
-        name: "snap-highlight",
-      }),
-    );
-  }
+  group.add(
+    new Konva.Rect({
+      x: 4,
+      y: 4,
+      width: cellWidth * 2 - 8,
+      height: cellHeight - 8,
+      stroke: "#16a34a",
+      strokeWidth: 4,
+      dash: [8, 5],
+      cornerRadius: 8,
+      listening: false,
+    }),
+  );
+
+  layer.add(group);
 
   layer.batchDraw();
 }
@@ -402,6 +410,16 @@ function createFixtureBoard(fixture: string | null): BoardState {
     return {
       dominoes: [
         createDomino("dragged", text("cat_en", "cat"), text("free", "free"), 3, 0, 0),
+        createDomino("target", image("cat_img", "cat image"), text("anchor", "anchor"), 0, 0, 90),
+      ],
+      links: [],
+    };
+  }
+
+  if (fixture === "snap-rotated") {
+    return {
+      dominoes: [
+        createDomino("dragged", text("cat_en", "cat"), text("free", "free"), 3, 0, 90),
         createDomino("target", image("cat_img", "cat image"), text("anchor", "anchor"), 0, 0, 90),
       ],
       links: [],
