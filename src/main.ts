@@ -1,6 +1,7 @@
 import Konva from "konva";
+import { rotateDomino } from "./core/board";
 import { getDominoCells } from "./core/geometry";
-import type { BoardState, Content, Domino, DominoHalf } from "./core/types";
+import type { BoardState, Content, Domino, DominoHalf, Point } from "./core/types";
 import "./styles.css";
 
 const cellWidth = 132;
@@ -57,6 +58,7 @@ function renderDomino(domino: Domino): void {
 
   renderHalf(group, cells.a, domino.a, "a");
   renderHalf(group, cells.b, domino.b, "b");
+  renderRotateControl(group, domino, cells);
 
   layer.add(group);
 }
@@ -90,6 +92,58 @@ function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content:
       align: "center",
     }),
   );
+}
+
+function renderRotateControl(
+  group: Konva.Group,
+  domino: Domino,
+  cells: Record<DominoHalf, Point>,
+): void {
+  const bounds = getCellBounds(Object.values(cells));
+  const center = {
+    x: boardPadding + (bounds.maxX + 1) * cellWidth - 18,
+    y: boardPadding + bounds.minY * cellHeight + 18,
+  };
+  const control = new Konva.Group({ x: center.x, y: center.y, name: `rotate-${domino.id}` });
+
+  control.add(
+    new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: 13,
+      fill: "#111827",
+      stroke: "#ffffff",
+      strokeWidth: 2,
+    }),
+  );
+  control.add(
+    new Konva.Text({
+      x: -7,
+      y: -9,
+      width: 14,
+      text: "R",
+      fill: "#ffffff",
+      fontFamily: "Arial, sans-serif",
+      fontSize: 14,
+      fontStyle: "bold",
+      align: "center",
+    }),
+  );
+
+  control.on("click tap", (event) => {
+    event.cancelBubble = true;
+    state = rotateDomino(state, domino.id);
+    render();
+  });
+
+  group.add(control);
+}
+
+function getCellBounds(cells: Point[]): { minY: number; maxX: number } {
+  return {
+    minY: Math.min(...cells.map((cell) => cell.y)),
+    maxX: Math.max(...cells.map((cell) => cell.x)),
+  };
 }
 
 function createFixtureBoard(): BoardState {
