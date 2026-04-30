@@ -14,7 +14,7 @@ describe("snap candidate detection", () => {
   it("returns null when nearby halves do not match", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: 1.1, y: 0 }),
-      domino({ id: "target", a: content("dog_img", "image"), x: 0, y: 0 }),
+      domino({ id: "target", a: content("dog_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
@@ -23,7 +23,7 @@ describe("snap candidate detection", () => {
   it("returns null when a valid match is outside the magnet threshold", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: 3, y: 0 }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
@@ -32,7 +32,7 @@ describe("snap candidate detection", () => {
   it("returns a candidate for a valid nearby match", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: 1.2, y: 0 }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toEqual({
@@ -46,25 +46,28 @@ describe("snap candidate detection", () => {
   });
 
   it.each([
-    ["right", { x: 1.2, y: 0 }, { x: 1, y: 0 }],
-    ["left", { x: -1.2, y: 0 }, { x: -1, y: 0 }],
-    ["below", { x: 0, y: 1.2 }, { x: 0, y: 1 }],
-    ["above", { x: 0, y: -1.2 }, { x: 0, y: -1 }],
-  ] as const)("can snap to the target's %s side", (_side, draggedPosition, snappedPosition) => {
+    ["right", 90, { x: 1.2, y: 0 }, { x: 1, y: 0 }],
+    ["left", 90, { x: -1.2, y: 0 }, { x: -1, y: 0 }],
+    ["below", 0, { x: 0, y: 1.2 }, { x: 0, y: 1 }],
+    ["above", 0, { x: 0, y: -1.2 }, { x: 0, y: -1 }],
+  ] as const)(
+    "can snap to the target's %s side",
+    (_side, targetRotation, draggedPosition, snappedPosition) => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: draggedPosition.x, y: draggedPosition.y }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: targetRotation }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.snappedPosition).toEqual(
       snappedPosition,
     );
-  });
+    },
+  );
 
   it("rejects a snap placement that would collide with another domino", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), b: content("free"), x: 1.2, y: 0 }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
       domino({ id: "blocker", x: 2, y: 0 }),
     ]);
 
@@ -74,8 +77,8 @@ describe("snap candidate detection", () => {
   it("chooses the closest candidate", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: 1.15, y: 0 }),
-      domino({ id: "target-far", a: content("cat_img", "image"), x: 0, y: 0 }),
-      domino({ id: "target-near", a: content("cat_img", "image"), x: 3, y: 0, rotation: 180 }),
+      domino({ id: "target-far", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+      domino({ id: "target-near", a: content("cat_img", "image"), x: 0.1, y: -2, rotation: 270 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
@@ -87,8 +90,8 @@ describe("snap candidate detection", () => {
     const state: BoardState = {
       dominoes: [
         domino({ id: "dragged", a: content("cat_en"), b: content("cat_en"), x: 1.2, y: 0 }),
-        domino({ id: "b-target", a: content("cat_img", "image"), x: 0, y: 0 }),
-        domino({ id: "a-target", a: content("cat_img", "image"), x: 0, y: 2 }),
+        domino({ id: "b-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+        domino({ id: "a-target", a: content("cat_img", "image"), x: 0, y: -2, rotation: 270 }),
       ],
       links: [],
     };
