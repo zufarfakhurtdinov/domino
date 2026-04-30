@@ -87,3 +87,20 @@ test("shows a snap candidate while dragging and applies it on release", async ({
     { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
   ]);
 });
+
+test("detaches linked dominoes from a canvas control", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/?fixture=linked");
+
+  await expect.poll(async () => {
+    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+    return state.links.length;
+  }).toBe(1);
+
+  const appBox = await page.locator("#app").boundingBox();
+  expect(appBox).not.toBeNull();
+
+  await page.mouse.click(appBox!.x + 182, appBox!.y + 50);
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.links).toEqual([]);
+});
