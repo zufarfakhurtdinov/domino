@@ -5,6 +5,7 @@ declare global {
     __DOMINO_TEST__: {
       getState: () => BoardState;
       getSnapCandidate: () => SnapCandidate | null;
+      getRotateControlState: (dominoId: string) => string | null;
     };
   }
 }

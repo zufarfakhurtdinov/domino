@@ -15,6 +15,7 @@ let stageHeight = 0;
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
 let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
 let currentSnapCandidate: SnapCandidate | null = null;
+const rotateControlStates = new Map<string, string>();
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
@@ -41,6 +42,7 @@ window.addEventListener("resize", resizeStage);
 window.__DOMINO_TEST__ = {
   getState: () => structuredClone(state),
   getSnapCandidate: () => structuredClone(currentSnapCandidate),
+  getRotateControlState: (dominoId: string) => rotateControlStates.get(dominoId) ?? null,
 };
 
 function resizeStage(): void {
@@ -254,31 +256,61 @@ function renderRotateControl(
     y: (bounds.minY - domino.y) * cellHeight + 18,
   };
   const control = new Konva.Group({ x: center.x, y: center.y, name: `rotate-${domino.id}` });
+  rotateControlStates.set(domino.id, "default");
 
+  const background = new Konva.Circle({
+    x: 0,
+    y: 0,
+    radius: 17,
+    fill: "#111827",
+    stroke: "#ffffff",
+    strokeWidth: 2,
+  });
   control.add(
-    new Konva.Circle({
-      x: 0,
-      y: 0,
-      radius: 13,
-      fill: "#111827",
-      stroke: "#ffffff",
-      strokeWidth: 2,
-    }),
+    background,
   );
   control.add(
-    new Konva.Text({
-      x: -7,
+    new Konva.Path({
+      x: -9,
       y: -9,
-      width: 14,
-      text: "R",
-      fill: "#ffffff",
-      fontFamily: "Arial, sans-serif",
-      fontSize: 14,
-      fontStyle: "bold",
-      align: "center",
+      data: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8 M21 3v5h-5",
+      stroke: "#ffffff",
+      strokeWidth: 1.8,
+      lineCap: "round",
+      lineJoin: "round",
+      scaleX: 0.75,
+      scaleY: 0.75,
+      listening: false,
     }),
   );
 
+  control.on("mouseenter", () => {
+    rotateControlStates.set(domino.id, "hover");
+    background.fill("#2563eb");
+    background.radius(18);
+    stage.container().style.cursor = "pointer";
+    layer.batchDraw();
+  });
+  control.on("mouseleave", () => {
+    rotateControlStates.set(domino.id, "default");
+    background.fill("#111827");
+    background.radius(17);
+    control.scale({ x: 1, y: 1 });
+    stage.container().style.cursor = "default";
+    layer.batchDraw();
+  });
+  control.on("mousedown touchstart", () => {
+    rotateControlStates.set(domino.id, "pressed");
+    background.fill("#1d4ed8");
+    control.scale({ x: 0.92, y: 0.92 });
+    layer.batchDraw();
+  });
+  control.on("mouseup touchend", () => {
+    rotateControlStates.set(domino.id, "hover");
+    background.fill("#2563eb");
+    control.scale({ x: 1, y: 1 });
+    layer.batchDraw();
+  });
   control.on("click tap", (event) => {
     event.cancelBubble = true;
     state = rotateDomino(state, domino.id);

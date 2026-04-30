@@ -43,7 +43,16 @@ test("rotates a domino by clicking its canvas rotate control", async ({ page }) 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
 
-  await page.mouse.click(appBox!.x + 278, appBox!.y + 50);
+  await page.mouse.move(appBox!.x + 278, appBox!.y + 50);
+  expect(await page.evaluate(() => window.__DOMINO_TEST__.getRotateControlState("cat"))).toBe(
+    "hover",
+  );
+
+  await page.mouse.down();
+  expect(await page.evaluate(() => window.__DOMINO_TEST__.getRotateControlState("cat"))).toBe(
+    "pressed",
+  );
+  await page.mouse.up();
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.dominoes.find((domino) => domino.id === "cat")?.rotation).toBe(90);
