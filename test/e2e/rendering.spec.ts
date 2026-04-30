@@ -61,3 +61,29 @@ test("drags a domino across the canvas and updates board state", async ({ page }
 
   expect({ x: cat?.x, y: cat?.y }).toEqual({ x: 1, y: 1 });
 });
+
+test("shows a snap candidate while dragging and applies it on release", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/?fixture=snap");
+
+  const appBox = await page.locator("#app").boundingBox();
+  expect(appBox).not.toBeNull();
+
+  await page.mouse.move(appBox!.x + 494, appBox!.y + 70);
+  await page.mouse.down();
+  await page.mouse.move(appBox!.x + 250, appBox!.y + 70, { steps: 10 });
+
+  const candidate = await page.evaluate(() => window.__DOMINO_TEST__.getSnapCandidate());
+  expect(candidate).toMatchObject({
+    draggedDominoId: "dragged",
+    targetDominoId: "target",
+    snappedPosition: { x: 1, y: 0 },
+  });
+
+  await page.mouse.up();
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 1, y: 0 });
+  expect(state.links).toEqual([
+    { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
+  ]);
+});
