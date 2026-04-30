@@ -47,14 +47,20 @@ describe("snap candidate detection", () => {
 
   it.each([
     ["right", 90, { x: 1.2, y: 0 }, { x: 1, y: 0 }],
-    ["left", 90, { x: -1.2, y: 0 }, { x: -1, y: 0 }],
+    ["left", 90, { x: -2.2, y: 0, rotation: 180 }, { x: -2, y: 0 }],
     ["below", 0, { x: 0, y: 1.2 }, { x: 0, y: 1 }],
     ["above", 0, { x: 0, y: -1.2 }, { x: 0, y: -1 }],
   ] as const)(
     "can snap to the target's %s side",
     (_side, targetRotation, draggedPosition, snappedPosition) => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: draggedPosition.x, y: draggedPosition.y }),
+      domino({
+        id: "dragged",
+        a: content("cat_en"),
+        x: draggedPosition.x,
+        y: draggedPosition.y,
+        rotation: "rotation" in draggedPosition ? draggedPosition.rotation : 0,
+      }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: targetRotation }),
     ]);
 
