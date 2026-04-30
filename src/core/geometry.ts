@@ -14,6 +14,15 @@ export function getHalfCell(domino: Domino, half: DominoHalf): Point {
   return cells[half];
 }
 
+export function getHalfCenter(domino: Domino, half: DominoHalf): Point {
+  const cell = getHalfCell(domino, half);
+  return { x: cell.x + 0.5, y: cell.y + 0.5 };
+}
+
+export function getOccupiedCells(domino: Domino): Point[] {
+  return Object.values(getDominoCells(domino)).sort(comparePoints);
+}
+
 export function getDominoCells(domino: Domino): Record<DominoHalf, Point> {
   const origin = { x: domino.x, y: domino.y };
 
@@ -30,4 +39,8 @@ export function getDominoCells(domino: Domino): Record<DominoHalf, Point> {
   }
 
   return { a: { x: domino.x, y: domino.y + 1 }, b: origin };
+}
+
+function comparePoints(left: Point, right: Point): number {
+  return left.y - right.y || left.x - right.x;
 }
