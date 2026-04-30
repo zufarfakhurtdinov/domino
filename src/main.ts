@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { rotateDomino } from "./core/board";
+import { detachDomino, rotateDomino } from "./core/board";
 import { moveConnectedGroup } from "./core/connections";
 import { getDominoCells, getOccupiedCells } from "./core/geometry";
 import { applySnap, findSnapCandidate } from "./core/snapping";
@@ -72,6 +72,9 @@ function renderDomino(domino: Domino): void {
 
   renderHalf(group, toLocalCell(cells.a, domino), domino.a, "a");
   renderHalf(group, toLocalCell(cells.b, domino), domino.b, "b");
+  if (isLinked(domino.id)) {
+    renderDetachControl(group, domino, cells);
+  }
   renderRotateControl(group, domino, cells);
   group.on("dragmove", () => {
     currentSnapCandidate = findSnapCandidate(getPreviewState(domino.id, group), domino.id, pairs, {
@@ -90,6 +93,52 @@ function renderDomino(domino: Domino): void {
   });
 
   layer.add(group);
+}
+
+function renderDetachControl(
+  group: Konva.Group,
+  domino: Domino,
+  cells: Record<DominoHalf, Point>,
+): void {
+  const bounds = getCellBounds(Object.values(cells));
+  const control = new Konva.Group({
+    x: (bounds.minX - domino.x) * cellWidth + 18,
+    y: (bounds.minY - domino.y) * cellHeight + 18,
+    name: `detach-${domino.id}`,
+  });
+
+  control.add(
+    new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: 13,
+      fill: "#dc2626",
+      stroke: "#ffffff",
+      strokeWidth: 2,
+    }),
+  );
+  control.add(
+    new Konva.Text({
+      x: -7,
+      y: -9,
+      width: 14,
+      text: "X",
+      fill: "#ffffff",
+      fontFamily: "Arial, sans-serif",
+      fontSize: 14,
+      fontStyle: "bold",
+      align: "center",
+    }),
+  );
+
+  control.on("click tap", (event) => {
+    event.cancelBubble = true;
+    state = detachDomino(state, domino.id);
+    currentSnapCandidate = null;
+    render();
+  });
+
+  group.add(control);
 }
 
 function renderSnapHighlight(candidate: SnapCandidate | null): void {
@@ -225,11 +274,16 @@ function toLocalCell(cell: Point, domino: Domino): Point {
   };
 }
 
-function getCellBounds(cells: Point[]): { minY: number; maxX: number } {
+function getCellBounds(cells: Point[]): { minX: number; minY: number; maxX: number } {
   return {
+    minX: Math.min(...cells.map((cell) => cell.x)),
     minY: Math.min(...cells.map((cell) => cell.y)),
     maxX: Math.max(...cells.map((cell) => cell.x)),
   };
+}
+
+function isLinked(dominoId: string): boolean {
+  return state.links.some((link) => link.dominoId1 === dominoId || link.dominoId2 === dominoId);
 }
 
 function createFixtureBoard(fixture: string | null): BoardState {
@@ -240,6 +294,16 @@ function createFixtureBoard(fixture: string | null): BoardState {
         createDomino("target", image("cat_img", "cat image"), text("anchor", "anchor"), 0, 0, 90),
       ],
       links: [],
+    };
+  }
+
+  if (fixture === "linked") {
+    return {
+      dominoes: [
+        createDomino("dragged", text("cat_en", "cat"), text("free", "free"), 1, 0, 0),
+        createDomino("target", image("cat_img", "cat image"), text("anchor", "anchor"), 0, 0, 90),
+      ],
+      links: [{ dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" }],
     };
   }
 
