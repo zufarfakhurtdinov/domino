@@ -9,8 +9,8 @@ import "./styles.css";
 const cellWidth = 132;
 const cellHeight = 76;
 const boardPadding = 32;
-const stageWidth = 720;
-const stageHeight = 420;
+let stageWidth = 0;
+let stageHeight = 0;
 
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
 let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
@@ -20,9 +20,14 @@ const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
   throw new Error("Missing #app container");
 }
+const appContainer = app;
+
+const initialSize = getStageSize();
+stageWidth = initialSize.width;
+stageHeight = initialSize.height;
 
 const stage = new Konva.Stage({
-  container: app,
+  container: appContainer,
   width: stageWidth,
   height: stageHeight,
 });
@@ -31,11 +36,27 @@ const layer = new Konva.Layer();
 stage.add(layer);
 
 render();
+window.addEventListener("resize", resizeStage);
 
 window.__DOMINO_TEST__ = {
   getState: () => structuredClone(state),
   getSnapCandidate: () => structuredClone(currentSnapCandidate),
 };
+
+function resizeStage(): void {
+  const nextSize = getStageSize();
+  stageWidth = nextSize.width;
+  stageHeight = nextSize.height;
+  stage.size(nextSize);
+  render();
+}
+
+function getStageSize(): { width: number; height: number } {
+  return {
+    width: appContainer.clientWidth || window.innerWidth,
+    height: appContainer.clientHeight || window.innerHeight,
+  };
+}
 
 function render(): void {
   layer.destroyChildren();

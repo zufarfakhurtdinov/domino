@@ -4,6 +4,10 @@ test("renders the fixed domino board to canvas", async ({ page }) => {
   await page.goto("http://127.0.0.1:5173/?fixture=basic");
 
   await expect(page.locator("#app canvas")).toBeVisible();
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  await expect(page.locator("#app canvas")).toHaveJSProperty("width", viewport!.width);
+  await expect(page.locator("#app canvas")).toHaveJSProperty("height", viewport!.height);
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.dominoes.map((domino) => domino.id)).toEqual(["cat", "dog"]);
