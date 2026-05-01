@@ -38,7 +38,7 @@ The checked-in browser artifact lives in `site/`.
 After any change that affects the web app, rebuild and refresh that directory before pushing:
 
 ```bash
-npm run build:docs
+npm run build:pages
 ```
 
 This command rebuilds the app and copies the final static output into `site/`. Treat `site/` as the final built web artifact directory that should stay in sync with the source.
