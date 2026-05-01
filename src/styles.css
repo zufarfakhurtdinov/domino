@@ -11,4 +11,54 @@ body {
 #app {
   width: 100vw;
   height: 100vh;
+  position: relative;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+.zoom-button {
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 16px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(17, 24, 39, 0.9);
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.22);
+  color: #ffffff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.zoom-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.zoom-button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.zoom-button:disabled {
+  background: rgba(148, 163, 184, 0.92);
+  cursor: default;
+}
+
+.zoom-button svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

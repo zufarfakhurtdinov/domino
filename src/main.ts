@@ -9,8 +9,12 @@ import "./styles.css";
 const cellWidth = 132;
 const cellHeight = 76;
 const boardPadding = 32;
+const minBoardScale = 0.4;
+const maxBoardScale = 1.8;
+const boardScaleStep = 0.2;
 let stageWidth = 0;
 let stageHeight = 0;
+let boardScale = 1;
 
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
 let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
@@ -35,6 +39,7 @@ const stage = new Konva.Stage({
 
 const layer = new Konva.Layer();
 stage.add(layer);
+const zoomControls = createZoomControls();
 
 render();
 window.addEventListener("resize", resizeStage);
@@ -43,6 +48,7 @@ window.__DOMINO_TEST__ = {
   getState: () => structuredClone(state),
   getSnapCandidate: () => structuredClone(currentSnapCandidate),
   getRotateControlState: (dominoId: string) => rotateControlStates.get(dominoId) ?? null,
+  getScale: () => boardScale,
 };
 
 function resizeStage(): void {
@@ -50,6 +56,7 @@ function resizeStage(): void {
   stageWidth = nextSize.width;
   stageHeight = nextSize.height;
   stage.size(nextSize);
+  stage.scale({ x: boardScale, y: boardScale });
   render();
 }
 
@@ -67,8 +74,8 @@ function render(): void {
     new Konva.Rect({
       x: 0,
       y: 0,
-      width: stageWidth,
-      height: stageHeight,
+      width: stageWidth / boardScale,
+      height: stageHeight / boardScale,
       fill: "#ffffff",
     }),
   );
@@ -86,6 +93,85 @@ function render(): void {
   }
 
   layer.draw();
+  updateZoomControls();
+}
+
+function createZoomControls(): HTMLDivElement {
+  const controls = document.createElement("div");
+  controls.className = "zoom-controls";
+
+  controls.append(
+    createZoomButton({
+      label: "Zoom in",
+      icon: createZoomIcon("plus"),
+      delta: boardScaleStep,
+      className: "zoom-in",
+    }),
+    createZoomButton({
+      label: "Zoom out",
+      icon: createZoomIcon("minus"),
+      delta: -boardScaleStep,
+      className: "zoom-out",
+    }),
+  );
+
+  appContainer.append(controls);
+
+  return controls;
+}
+
+function createZoomButton(config: {
+  label: string;
+  icon: string;
+  delta: number;
+  className: string;
+}): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `zoom-button ${config.className}`;
+  button.setAttribute("aria-label", config.label);
+  button.innerHTML = config.icon;
+  button.addEventListener("click", () => {
+    setBoardScale(boardScale + config.delta);
+  });
+
+  return button;
+}
+
+function createZoomIcon(kind: "plus" | "minus"): string {
+  const verticalStroke = kind === "plus" ? '<path d="M12 7v10" />' : "";
+
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 12h10" />
+      ${verticalStroke}
+    </svg>
+  `;
+}
+
+function setBoardScale(nextScale: number): void {
+  const clampedScale = Math.min(maxBoardScale, Math.max(minBoardScale, Number(nextScale.toFixed(2))));
+  if (clampedScale === boardScale) {
+    updateZoomControls();
+    return;
+  }
+
+  boardScale = clampedScale;
+  stage.scale({ x: boardScale, y: boardScale });
+  render();
+}
+
+function updateZoomControls(): void {
+  const zoomInButton = zoomControls.querySelector<HTMLButtonElement>(".zoom-in");
+  const zoomOutButton = zoomControls.querySelector<HTMLButtonElement>(".zoom-out");
+
+  if (zoomInButton) {
+    zoomInButton.disabled = boardScale >= maxBoardScale;
+  }
+
+  if (zoomOutButton) {
+    zoomOutButton.disabled = boardScale <= minBoardScale;
+  }
 }
 
 function renderDomino(domino: Domino): void {
