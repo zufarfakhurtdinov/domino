@@ -33,19 +33,21 @@ npx tsc --noEmit
 
 ## Publish Artifact
 
-The checked-in browser artifact lives in `site/`.
+The checked-in browser artifact for GitHub Pages lives in `docs/`.
+
+GitHub Pages should publish from the repository `docs/` directory.
 
 After any change that affects the web app, rebuild and refresh that directory before pushing:
 
 ```bash
-npm run build:pages
+npm run build:docs
 ```
 
-This command rebuilds the app and copies the final static output into `site/`. Treat `site/` as the final built web artifact directory that should stay in sync with the source.
+This command rebuilds the app and copies the final static output into `docs/`. Treat `docs/` as the checked-in GitHub Pages artifact directory that should stay in sync with the source.
 
 ## Structure
 
 - `src/core/`: testable game logic for geometry, matching, snapping, links, and layout.
 - `src/main.ts`: minimal Konva browser renderer.
-- `site/`: checked-in built web artifact.
+- `docs/`: checked-in GitHub Pages build artifact.
 - `test/`: Vitest unit tests and Playwright browser tests.
