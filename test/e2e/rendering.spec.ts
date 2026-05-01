@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+test("renders the merged demo board by default", async ({ page }) => {
+  await page.goto("http://127.0.0.1:5173/");
+
+  await expect(page.locator("#app canvas")).toBeVisible();
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.map((domino) => domino.id)).toEqual([
+    "linked-dragged",
+    "linked-target",
+    "snap-dragged",
+    "snap-target",
+    "rotated-dragged",
+    "rotated-target",
+  ]);
+  expect(state.links).toEqual([
+    { dominoId1: "linked-dragged", half1: "a", dominoId2: "linked-target", half2: "a" },
+  ]);
+});
+
 test("renders the fixed domino board to canvas", async ({ page }) => {
   await page.goto("http://127.0.0.1:5173/?fixture=basic");
 

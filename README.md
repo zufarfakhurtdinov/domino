@@ -12,14 +12,16 @@ npm run dev
 Open:
 
 ```txt
-http://127.0.0.1:5173/?fixture=basic
+http://127.0.0.1:5173/
 ```
 
 Useful fixtures:
 
 ```txt
+?fixture=demo
 ?fixture=basic
 ?fixture=snap
+?fixture=snap-rotated
 ?fixture=linked
 ```
 
