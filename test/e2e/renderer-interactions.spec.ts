@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 const modes = [
-  { name: "konva", renderer: "konva" },
   { name: "svg", renderer: "svg" },
   { name: "dom", renderer: "dom" },
 ] as const;
@@ -10,13 +9,7 @@ for (const mode of modes) {
   test(`${mode.name} handles real rotate clicks`, async ({ page }) => {
     await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
 
-    if (mode.renderer === "konva") {
-      const appBox = await page.locator("#app").boundingBox();
-      expect(appBox).not.toBeNull();
-      await page.mouse.click(appBox!.x + 278, appBox!.y + 50);
-    } else {
-      await page.locator("[data-role='rotate-control'][data-control-domino-id='cat']").click();
-    }
+    await page.locator("[data-role='rotate-control'][data-control-domino-id='cat']").click();
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
     expect(state.dominoes.find((domino) => domino.id === "cat")?.rotation).toBe(90);
@@ -43,13 +36,7 @@ for (const mode of modes) {
   test(`${mode.name} handles real detach clicks`, async ({ page }) => {
     await page.goto(`/domino/?fixture=linked&renderer=${mode.renderer}`);
 
-    if (mode.renderer === "konva") {
-      const appBox = await page.locator("#app").boundingBox();
-      expect(appBox).not.toBeNull();
-      await page.mouse.click(appBox!.x + 131, appBox!.y + 98);
-    } else {
-      await page.locator("[data-role='detach-control']").click();
-    }
+    await page.locator("[data-role='detach-control']").click();
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
     expect(state.links).toEqual([]);

@@ -12,9 +12,9 @@ import { board, content, domino } from "./core.fixtures";
 describe("view transforms", () => {
   it.each([
     [0, { x: 2, y: 3 }],
-    [90, { x: 100, y: 3 }],
-    [180, { x: 266, y: 101 }],
-    [270, { x: 2, y: 267 }],
+    [90, { x: 102, y: 3 }],
+    [180, { x: 202, y: 103 }],
+    [270, { x: 2, y: 203 }],
   ] as const)("returns the visual transform for %s degrees", (rotation, expected) => {
     expect(getVisualTransform(domino({ x: 2, y: 3, rotation }), DEFAULT_BOARD_METRICS)).toEqual(
       expected,
@@ -50,7 +50,7 @@ describe("view transforms", () => {
 
     expect(getLinkControlView(state, link, DEFAULT_BOARD_METRICS)).toEqual({
       link,
-      center: { x: 99, y: 66 },
+      center: { x: 100, y: 58.5 },
     });
   });
 
@@ -58,11 +58,11 @@ describe("view transforms", () => {
     expect(
       getSnapHighlightView(domino({ x: 1, y: 4, rotation: 90 }), DEFAULT_BOARD_METRICS),
     ).toEqual({
-      x: 99,
+      x: 101,
       y: 4,
       rotation: 90,
-      width: 256,
-      height: 90,
+      width: 192,
+      height: 92,
     });
   });
 

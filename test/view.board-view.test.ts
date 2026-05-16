@@ -35,25 +35,25 @@ describe("board view", () => {
       x: 100,
       y: 17,
       rotation: 0,
-      width: 264,
-      height: 98,
+      width: 200,
+      height: 100,
       rotateControl: {
-        center: { x: 246, y: 18 },
+        center: { x: 182, y: 18 },
         fill: "#2563eb",
       },
     });
     expect(view.linkControls).toEqual([
       {
         link: { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
-        center: { x: 99, y: 66 },
+        center: { x: 100, y: 58.5 },
       },
     ]);
     expect(view.snapHighlight).toMatchObject({
       x: 100,
       y: 17,
       rotation: 0,
-      width: 256,
-      height: 90,
+      width: 192,
+      height: 92,
     });
   });
 

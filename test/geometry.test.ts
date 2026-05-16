@@ -9,10 +9,10 @@ import { domino } from "./core.fixtures";
 
 describe("domino geometry", () => {
   it.each([
-    [0, { a: { x: 32, y: 48, width: 132, height: 98 }, b: { x: 164, y: 48, width: 132, height: 98 } }],
-    [90, { a: { x: 32, y: 48, width: 98, height: 132 }, b: { x: 32, y: 180, width: 98, height: 132 } }],
-    [180, { a: { x: 164, y: 48, width: 132, height: 98 }, b: { x: 32, y: 48, width: 132, height: 98 } }],
-    [270, { a: { x: 32, y: 180, width: 98, height: 132 }, b: { x: 32, y: 48, width: 98, height: 132 } }],
+    [0, { a: { x: 32, y: 48, width: 100, height: 100 }, b: { x: 132, y: 48, width: 100, height: 100 } }],
+    [90, { a: { x: 32, y: 48, width: 100, height: 100 }, b: { x: 32, y: 148, width: 100, height: 100 } }],
+    [180, { a: { x: 132, y: 48, width: 100, height: 100 }, b: { x: 32, y: 48, width: 100, height: 100 } }],
+    [270, { a: { x: 32, y: 148, width: 100, height: 100 }, b: { x: 32, y: 48, width: 100, height: 100 } }],
   ] as const)("returns half bounds for %s degrees", (rotation, expected) => {
     expect({
       a: getHalfBounds(domino({ x: 32, y: 48, rotation }), "a"),
@@ -24,15 +24,15 @@ describe("domino geometry", () => {
     expect(getDominoBounds(domino({ x: 32, y: 48, rotation: 270 }))).toEqual({
       x: 32,
       y: 48,
-      width: 98,
-      height: 264,
+      width: 100,
+      height: 200,
     });
   });
 
   it("returns the center of a rendered half", () => {
     expect(getHalfCenter(domino({ x: 32, y: 48, rotation: 90 }), "b")).toEqual({
-      x: 81,
-      y: 246,
+      x: 82,
+      y: 198,
     });
   });
 

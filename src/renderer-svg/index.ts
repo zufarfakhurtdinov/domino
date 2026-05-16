@@ -1,5 +1,10 @@
-import type { Link, Point } from "../core/types";
-import { getRotateControlView, ROTATE_ICON_PATH } from "../view/controls";
+import type { DominoHalf, Link, Point } from "../core/types";
+import {
+  getRotateControlView,
+  ROTATE_ICON_PATH,
+  ROTATE_ICON_STROKE_WIDTH,
+  ROTATE_ICON_TRANSFORM,
+} from "../view/controls";
 import { DEFAULT_BOARD_METRICS } from "../view/metrics";
 import type { BoardView, ControlState } from "../view/types";
 
@@ -74,16 +79,13 @@ export class SvgRenderer {
 
       domino.halves.forEach((half) => {
         group.append(
-          createRect({
+          createHalfPath({
+            half: half.half,
             x: half.x,
             y: half.y,
             width: half.width,
             height: half.height,
             fill: half.fill,
-            stroke: "#111827",
-            strokeWidth: 2,
-            rx: 6,
-            ry: 6,
           }),
         );
 
@@ -146,10 +148,10 @@ export class SvgRenderer {
       rotateControl.append(
         createSvgElement("path", {
           d: ROTATE_ICON_PATH,
-          transform: "translate(-9 -9) scale(0.75)",
+          transform: ROTATE_ICON_TRANSFORM,
           fill: "none",
           stroke: "#ffffff",
-          "stroke-width": "1.8",
+          "stroke-width": String(ROTATE_ICON_STROKE_WIDTH),
           "stroke-linecap": "round",
           "stroke-linejoin": "round",
           "pointer-events": "none",
@@ -238,6 +240,48 @@ function createSvgElement<K extends keyof SVGElementTagNameMap>(
     element.setAttribute(key, value);
   });
   return element;
+}
+
+function createHalfPath(config: {
+  half: DominoHalf;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: string;
+}) {
+  const radius = 6;
+  const x = config.x;
+  const y = config.y;
+  const right = x + config.width;
+  const bottom = y + config.height;
+
+  const d =
+    config.half === "a"
+      ? [
+          `M ${x + radius} ${y}`,
+          `H ${right}`,
+          `V ${bottom}`,
+          `H ${x + radius}`,
+          `A ${radius} ${radius} 0 0 1 ${x} ${bottom - radius}`,
+          `V ${y + radius}`,
+          `A ${radius} ${radius} 0 0 1 ${x + radius} ${y}`,
+          "Z",
+        ].join(" ")
+      : [
+          `M ${x} ${y}`,
+          `H ${right - radius}`,
+          `A ${radius} ${radius} 0 0 1 ${right} ${y + radius}`,
+          `V ${bottom - radius}`,
+          `A ${radius} ${radius} 0 0 1 ${right - radius} ${bottom}`,
+          `H ${x}`,
+          "Z",
+        ].join(" ");
+
+  return createSvgElement("path", {
+    d,
+    fill: config.fill,
+  });
 }
 
 function createRect(config: {

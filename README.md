@@ -50,6 +50,7 @@ This command rebuilds the app and copies the final static output into `docs/`. T
 ## Structure
 
 - `src/core/`: testable game logic for geometry, matching, snapping, links, and layout.
-- `src/main.ts`: minimal Konva browser renderer.
+- `src/main.ts`: browser entry that loads the SVG renderer by default, with `?renderer=dom` for the DOM renderer.
+- `src/renderer-svg/` and `src/renderer-dom/`: browser renderers.
 - `docs/`: checked-in GitHub Pages build artifact.
 - `test/`: Vitest unit tests and Playwright browser tests.

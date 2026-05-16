@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("renders the default Konva board", async ({ page }) => {
+test("renders the default SVG board", async ({ page }) => {
   await page.goto("/domino/");
 
-  await expect(page.locator("#app canvas")).toBeVisible();
+  await expect(page.locator(".board-svg")).toBeVisible();
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.dominoes.map((domino) => domino.id)).toEqual([
@@ -16,7 +16,7 @@ test("renders the default Konva board", async ({ page }) => {
   ]);
 });
 
-test("renders the SVG board", async ({ page }) => {
+test("renders the explicit SVG board", async ({ page }) => {
   await page.goto("/domino/?fixture=basic&renderer=svg");
 
   await expect(page.locator(".board-svg")).toBeVisible();

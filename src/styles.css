@@ -41,28 +41,39 @@ body {
 
 .domino-half {
   position: absolute;
-  border: 2px solid #111827;
-  border-radius: 6px;
   box-sizing: border-box;
   display: grid;
   place-items: center;
   color: #111827;
   font-size: 20px;
   text-align: center;
-  padding: 0 12px;
+}
+
+.domino-half[data-half="a"] {
+  border-radius: 6px 0 0 6px;
+}
+
+.domino-half[data-half="b"] {
+  border-radius: 0 6px 6px 0;
 }
 
 .domino-rotate-control {
   position: absolute;
   border: 2px solid #ffffff;
   border-radius: 999px;
+  padding: 0;
   color: #ffffff;
-  font-size: 19px;
-  line-height: 1;
   display: grid;
   place-items: center;
   cursor: pointer;
   transform-origin: center;
+}
+
+.domino-rotate-control svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  overflow: visible;
 }
 
 .snap-highlight {

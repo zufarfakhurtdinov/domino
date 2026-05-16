@@ -1,7 +1,7 @@
 import type { Domino, DominoHalf, Point, Rect, Rotation } from "./types";
 
-export const HALF_WIDTH = 132;
-export const HALF_HEIGHT = 98;
+export const HALF_WIDTH = 100;
+export const HALF_HEIGHT = 100;
 export const DOMINO_WIDTH = HALF_WIDTH * 2;
 export const DOMINO_HEIGHT = HALF_HEIGHT;
 export const SNAP_GAP = 2;

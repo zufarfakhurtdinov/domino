@@ -27,7 +27,7 @@ export function createBoardView(
           y: 0,
           width: metrics.halfWidth,
           height: metrics.halfHeight,
-          fill: "#f8fafc",
+          fill: "#f3f4f6",
           content: domino.a,
         },
         {
@@ -36,7 +36,7 @@ export function createBoardView(
           y: 0,
           width: metrics.halfWidth,
           height: metrics.halfHeight,
-          fill: "#eef6ff",
+          fill: "#e5e7eb",
           content: domino.b,
         },
       ],

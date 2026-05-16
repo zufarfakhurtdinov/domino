@@ -1,4 +1,10 @@
 import type { Link, Point } from "../core/types";
+import {
+  ROTATE_ICON_PATH,
+  ROTATE_ICON_STROKE_WIDTH,
+  ROTATE_ICON_TRANSFORM,
+  ROTATE_ICON_VIEW_BOX,
+} from "../view/controls";
 import type { BoardView, ControlState } from "../view/types";
 import { getBoardSurfaceTransform, getDominoTransform } from "./styles";
 
@@ -10,6 +16,8 @@ type DomRendererCallbacks = {
   onRotateControlStateChange: (dominoId: string, state: ControlState) => void;
   onDetach: (link: Link) => void;
 };
+
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 export class DomRenderer {
   private readonly board: HTMLDivElement;
@@ -90,7 +98,7 @@ export class DomRenderer {
       rotateControl.style.height = `${domino.rotateControl.radius * 2}px`;
       rotateControl.style.background = domino.rotateControl.fill;
       rotateControl.style.transform = `scale(${domino.rotateControl.scale})`;
-      rotateControl.innerHTML = "↻";
+      rotateControl.append(createRotateIcon());
       rotateControl.addEventListener("pointerenter", () => {
         this.callbacks.onRotateControlStateChange(domino.id, "hover");
       });
@@ -155,4 +163,24 @@ export class DomRenderer {
       y: (event.clientY - bounds.top) / this.scale,
     };
   }
+}
+
+function createRotateIcon(): SVGSVGElement {
+  const icon = document.createElementNS(SVG_NS, "svg");
+  icon.setAttribute("viewBox", ROTATE_ICON_VIEW_BOX);
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("focusable", "false");
+
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", ROTATE_ICON_PATH);
+  path.setAttribute("transform", ROTATE_ICON_TRANSFORM);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", String(ROTATE_ICON_STROKE_WIDTH));
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  path.setAttribute("pointer-events", "none");
+  icon.append(path);
+
+  return icon;
 }

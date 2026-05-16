@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 const modes = [
-  { name: "konva", renderer: "konva" },
   { name: "svg", renderer: "svg" },
   { name: "dom", renderer: "dom" },
 ] as const;
@@ -37,7 +36,7 @@ for (const mode of modes) {
     });
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 132, y: 49 });
+    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 134, y: 32 });
     expect(state.links).toEqual([
       { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
     ]);

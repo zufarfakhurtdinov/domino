@@ -4,7 +4,7 @@ import { DEFAULT_BOARD_METRICS } from "../src/view/metrics";
 describe("view controls", () => {
   it("returns the rotate control anchor and style for each control state", () => {
     expect(getRotateControlView(DEFAULT_BOARD_METRICS, "default")).toEqual({
-      center: { x: 246, y: 18 },
+      center: { x: 182, y: 18 },
       radius: 17,
       fill: "#111827",
       scale: 1,
