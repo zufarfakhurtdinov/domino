@@ -30,8 +30,8 @@ export function getRotateControlView(
 ): RotateControlView {
   return {
     center: {
-      x: metrics.halfWidth * 2 - 18,
-      y: 18,
+      x: metrics.halfWidth * 2,
+      y: 0,
     },
     radius: rotateControlRadiusByState[state],
     fill: rotateControlFillByState[state],

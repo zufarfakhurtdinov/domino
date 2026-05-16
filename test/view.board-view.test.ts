@@ -38,7 +38,7 @@ describe("board view", () => {
       width: 200,
       height: 100,
       rotateControl: {
-        center: { x: 182, y: 18 },
+        center: { x: 200, y: 0 },
         fill: "#2563eb",
       },
     });
