@@ -1,6 +1,7 @@
 import { detachDomino } from "../core/board";
+import { moveConnectedGroup } from "../core/connections";
 import { applySnap } from "../core/snapping";
-import type { BoardState, Pair } from "../core/types";
+import type { BoardState, Pair, SnapCandidate } from "../core/types";
 import { derivePreviewResult } from "../view/interaction";
 import type { BoardMetrics, DragVisualState } from "../view/types";
 
@@ -22,7 +23,17 @@ export function commitDrop(
     metrics,
   );
 
-  return result.candidate ? applySnap(state, result.candidate) : result.previewState;
+  return commitPreviewDrop(result.previewState, dominoId, result.candidate);
+}
+
+export function commitPreviewDrop(
+  previewState: BoardState,
+  dominoId: string,
+  candidate: SnapCandidate | null,
+): BoardState {
+  return candidate
+    ? applySnap(moveConnectedGroup(previewState, dominoId, candidate.snappedPosition), candidate)
+    : previewState;
 }
 
 export function detachFirstLink(state: BoardState): BoardState {

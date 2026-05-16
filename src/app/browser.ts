@@ -1,7 +1,6 @@
-import { commitDrop, detachFirstLink, SNAP_THRESHOLD } from "./actions";
+import { commitDrop, commitPreviewDrop, detachFirstLink, SNAP_THRESHOLD } from "./actions";
 import { createFixtureBoard, pairs } from "./model";
 import { detachDomino, rotateDomino } from "../core/board";
-import { applySnap } from "../core/snapping";
 import type { BoardState, Link, Point, SnapCandidate } from "../core/types";
 import { createBoardView } from "../view/board-view";
 import { derivePreviewResult } from "../view/interaction";
@@ -97,10 +96,8 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
         return;
       }
 
-      if (currentSnapCandidate) {
-        state = applySnap(state, currentSnapCandidate);
-      } else if (previewState) {
-        state = previewState;
+      if (previewState) {
+        state = commitPreviewDrop(previewState, dragSession.dominoId, currentSnapCandidate);
       }
 
       dragSession = null;

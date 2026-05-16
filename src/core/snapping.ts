@@ -8,6 +8,7 @@ import {
   rectanglesOverlap,
   SNAP_GAP,
 } from "./geometry";
+import { getConnectedDominoIds } from "./connections";
 import { canMatch } from "./matching";
 import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
 
@@ -214,12 +215,21 @@ function getDesiredHalfBounds(draggedLocal: Rect, targetHalfBounds: Rect, direct
 }
 
 function collides(state: BoardState, dragged: Domino, snappedPosition: Point): boolean {
-  const snappedDragged = { ...dragged, x: snappedPosition.x, y: snappedPosition.y };
-  const bounds = getDominoBounds(snappedDragged);
+  const connected = new Set(getConnectedDominoIds(state, dragged.id));
+  const delta = {
+    x: snappedPosition.x - dragged.x,
+    y: snappedPosition.y - dragged.y,
+  };
+  const movedGroupBounds = state.dominoes
+    .filter((domino) => connected.has(domino.id))
+    .map((domino) => getDominoBounds({ ...domino, x: domino.x + delta.x, y: domino.y + delta.y }));
+  const externalBounds = state.dominoes
+    .filter((domino) => !connected.has(domino.id))
+    .map((domino) => getDominoBounds(domino));
 
-  return state.dominoes
-    .filter((domino) => domino.id !== dragged.id)
-    .some((domino) => rectanglesOverlap(bounds, getDominoBounds(domino)));
+  return movedGroupBounds.some((groupBounds) =>
+    externalBounds.some((external) => rectanglesOverlap(groupBounds, external)),
+  );
 }
 
 function distanceBetween(left: Point, right: Point): number {
