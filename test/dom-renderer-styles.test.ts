@@ -6,6 +6,11 @@ describe("dom renderer styles", () => {
   });
 
   it("returns the rigid domino transform", () => {
-    expect(getDominoTransform(164, 32, 90)).toBe("translate(164px, 32px) rotate(90deg)");
+    const position = { x: 164, y: 32 };
+    const rotation = 90;
+
+    expect(getDominoTransform(position.x, position.y, rotation)).toBe(
+      `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
+    );
   });
 });

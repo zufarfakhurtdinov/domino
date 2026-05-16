@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { HALF_HEIGHT, HALF_WIDTH } from "../../src/core/geometry";
 
 const modes = [
   { name: "svg", renderer: "svg" },
@@ -21,16 +22,23 @@ for (const mode of modes) {
 
     const appBox = await page.locator("#app").boundingBox();
     expect(appBox).not.toBeNull();
+    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+    const cat = stateBefore.dominoes.find((domino) => domino.id === "cat");
+    expect(cat).toBeDefined();
 
-    await page.mouse.move(appBox!.x + 100, appBox!.y + 81);
+    await page.mouse.move(appBox!.x + cat!.x + HALF_WIDTH / 2, appBox!.y + cat!.y + HALF_HEIGHT / 2);
     await page.mouse.down();
-    await page.mouse.move(appBox!.x + 200, appBox!.y + 160, { steps: 8 });
+    await page.mouse.move(
+      appBox!.x + cat!.x + HALF_WIDTH + HALF_WIDTH / 2,
+      appBox!.y + cat!.y + HALF_HEIGHT + HALF_HEIGHT / 2,
+      { steps: 8 },
+    );
     await page.mouse.up();
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
     expect(state.dominoes.find((domino) => domino.id === "cat")).toMatchObject({
-      x: 132,
-      y: 111,
+      x: cat!.x + HALF_WIDTH,
+      y: cat!.y + HALF_HEIGHT,
     });
   });
 

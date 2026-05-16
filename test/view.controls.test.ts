@@ -1,10 +1,11 @@
+import { DOMINO_WIDTH } from "../src/core/geometry";
 import { getDetachControlRadius, getRotateControlView } from "../src/view/controls";
 import { DEFAULT_BOARD_METRICS } from "../src/view/metrics";
 
 describe("view controls", () => {
   it("returns the rotate control anchor and style for each control state", () => {
     expect(getRotateControlView(DEFAULT_BOARD_METRICS, "default")).toEqual({
-      center: { x: 200, y: 0 },
+      center: { x: DOMINO_WIDTH, y: 0 },
       radius: 17,
       fill: "#111827",
       scale: 1,

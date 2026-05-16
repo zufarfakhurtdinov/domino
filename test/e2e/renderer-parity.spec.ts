@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { HALF_HEIGHT, HALF_WIDTH, SNAP_GAP } from "../../src/core/geometry";
 
 const modes = [
   { name: "svg", renderer: "svg" },
@@ -20,23 +21,38 @@ for (const mode of modes) {
   test(`${mode.name} drags a domino through the shared workflow`, async ({ page }) => {
     await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
     await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.drop === "function");
-    await page.evaluate(() => {
-      window.__DOMINO_TEST__.drop("cat", { x: 164, y: 164, rotation: 0 });
-    });
+    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+    const cat = stateBefore.dominoes.find((domino) => domino.id === "cat");
+    expect(cat).toBeDefined();
+    const dragPosition = { x: cat!.x + HALF_WIDTH, y: cat!.y + HALF_HEIGHT };
+    await page.evaluate((position) => {
+      window.__DOMINO_TEST__.drop("cat", { ...position, rotation: 0 });
+    }, dragPosition);
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "cat")).toMatchObject({ x: 164, y: 164 });
+    expect(state.dominoes.find((domino) => domino.id === "cat")).toMatchObject(dragPosition);
   });
 
   test(`${mode.name} snaps a domino through the shared workflow`, async ({ page }) => {
     await page.goto(`/domino/?fixture=snap&renderer=${mode.renderer}`);
     await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.drop === "function");
-    await page.evaluate(() => {
-      window.__DOMINO_TEST__.drop("dragged", { x: 140, y: 86, rotation: 0 });
-    });
+    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+    const target = stateBefore.dominoes.find((domino) => domino.id === "target");
+    expect(target).toBeDefined();
+    const snappedPosition = {
+      x: target!.x + HALF_HEIGHT + SNAP_GAP,
+      y: target!.y + HALF_WIDTH / 2,
+    };
+    await page.evaluate((position) => {
+      window.__DOMINO_TEST__.drop("dragged", {
+        x: position.x + 6,
+        y: position.y + 4,
+        rotation: 0,
+      });
+    }, snappedPosition);
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 134, y: 82 });
+    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject(snappedPosition);
     expect(state.links).toEqual([
       { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
     ]);

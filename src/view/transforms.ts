@@ -1,5 +1,6 @@
 import {
   getBoundsOriginFromTransform,
+  getDominoBounds,
   getHalfBounds,
   getTransformOrigin,
 } from "../core/geometry";
@@ -51,8 +52,12 @@ export function getLinkControlView(
     return null;
   }
 
-  const firstBounds = getHalfBounds(first, link.half1);
-  const secondBounds = getHalfBounds(second, link.half2);
+  const firstBounds = arePerpendicular(first, second)
+    ? getDominoBounds(first)
+    : getHalfBounds(first, link.half1);
+  const secondBounds = arePerpendicular(first, second)
+    ? getDominoBounds(second)
+    : getHalfBounds(second, link.half2);
 
   const horizontal = getLinkOrientation(firstBounds, secondBounds) === "horizontal";
   const left = firstBounds.x <= secondBounds.x ? firstBounds : secondBounds;
@@ -118,6 +123,14 @@ function getLinkOrientation(first: Rect, second: Rect): "horizontal" | "vertical
   return Math.abs(first.x - second.x) >= Math.abs(first.y - second.y)
     ? "horizontal"
     : "vertical";
+}
+
+function arePerpendicular(left: Domino, right: Domino): boolean {
+  return isVertical(left) !== isVertical(right);
+}
+
+function isVertical(domino: Domino): boolean {
+  return domino.rotation === 90 || domino.rotation === 270;
 }
 
 function getAxisGap(firstStart: number, firstSize: number, secondStart: number, secondSize: number): number {
