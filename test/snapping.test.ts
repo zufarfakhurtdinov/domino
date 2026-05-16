@@ -41,7 +41,22 @@ describe("snap candidate detection", () => {
       draggedHalf: "a",
       targetDominoId: "target",
       targetHalf: "a",
-      snappedPosition: { x: HALF_HEIGHT + SNAP_GAP, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+      snappedPosition: { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
+    });
+  });
+
+  it("centers a perpendicular snap on the target domino side", () => {
+    const state = board([
+      domino({ id: "dragged", a: content("cat_en"), x: HALF_HEIGHT + SNAP_GAP + 4, y: HALF_WIDTH / 2 + 3 }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "dragged",
+      draggedHalf: "a",
+      targetDominoId: "target",
+      targetHalf: "a",
+      snappedPosition: { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
     });
   });
 
@@ -49,14 +64,14 @@ describe("snap candidate detection", () => {
     [
       "right",
       90,
-      { x: HALF_HEIGHT + SNAP_GAP + 8, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
-      { x: HALF_HEIGHT + SNAP_GAP, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+      { x: HALF_HEIGHT + SNAP_GAP + 8, y: HALF_WIDTH / 2 + 8 },
+      { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
     ],
     [
       "left",
       90,
-      { x: -(HALF_WIDTH * 2 + SNAP_GAP) - 8, y: (HALF_WIDTH - HALF_HEIGHT) / 2, rotation: 180 },
-      { x: -(HALF_WIDTH * 2 + SNAP_GAP), y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+      { x: -(HALF_WIDTH * 2 + SNAP_GAP) - 8, y: HALF_WIDTH / 2 + 8, rotation: 180 },
+      { x: -(HALF_WIDTH * 2 + SNAP_GAP), y: HALF_WIDTH / 2 },
     ],
     ["below", 0, { x: 0, y: HALF_HEIGHT + SNAP_GAP + 8 }, { x: 0, y: HALF_HEIGHT + SNAP_GAP }],
     ["above", 0, { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) - 8 }, { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) }],

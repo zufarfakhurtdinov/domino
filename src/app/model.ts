@@ -4,7 +4,7 @@ import type { BoardState, Content, Domino, Pair } from "../core/types";
 const BOARD_LEFT = 32;
 const BOARD_TOP = 32;
 const LINKED_DRAGGED_LEFT = BOARD_LEFT + HALF_HEIGHT + SNAP_GAP;
-const LINKED_DRAGGED_TOP = BOARD_TOP + (HALF_WIDTH - HALF_HEIGHT) / 2;
+const LINKED_DRAGGED_TOP = BOARD_TOP + HALF_WIDTH / 2;
 
 export const pairs: Pair[] = [
   { a: "cat_en", b: "cat_img" },

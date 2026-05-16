@@ -3,6 +3,7 @@ import {
   getHalfBounds,
   getHalfLocalBounds,
   getRectCenter,
+  getRotationSize,
   HALF_WIDTH,
   rectanglesOverlap,
   SNAP_GAP,
@@ -101,13 +102,9 @@ function candidateForDirection(
   targetHalf: DominoHalf,
   direction: Point,
 ): SnapCandidate {
-  const draggedLocal = getHalfLocalBounds(dragged.rotation, draggedHalf);
-  const targetHalfBounds = getHalfBounds(target, targetHalf);
-  const desiredHalfBounds = getDesiredHalfBounds(draggedLocal, targetHalfBounds, direction);
-  const snappedPosition = {
-    x: desiredHalfBounds.x - draggedLocal.x,
-    y: desiredHalfBounds.y - draggedLocal.y,
-  };
+  const snappedPosition = arePerpendicular(dragged, target)
+    ? getPerpendicularSnappedPosition(dragged, target, direction)
+    : getHalfSnappedPosition(dragged, draggedHalf, target, targetHalf, direction);
 
   return {
     draggedDominoId: dragged.id,
@@ -117,6 +114,67 @@ function candidateForDirection(
     snappedPosition,
     distance: distanceBetween({ x: dragged.x, y: dragged.y }, snappedPosition),
   };
+}
+
+function getHalfSnappedPosition(
+  dragged: Domino,
+  draggedHalf: DominoHalf,
+  target: Domino,
+  targetHalf: DominoHalf,
+  direction: Point,
+): Point {
+  const draggedLocal = getHalfLocalBounds(dragged.rotation, draggedHalf);
+  const targetHalfBounds = getHalfBounds(target, targetHalf);
+  const desiredHalfBounds = getDesiredHalfBounds(draggedLocal, targetHalfBounds, direction);
+
+  return {
+    x: desiredHalfBounds.x - draggedLocal.x,
+    y: desiredHalfBounds.y - draggedLocal.y,
+  };
+}
+
+function getPerpendicularSnappedPosition(
+  dragged: Domino,
+  target: Domino,
+  direction: Point,
+): Point {
+  const draggedSize = getRotationSize(dragged.rotation);
+  const targetBounds = getDominoBounds(target);
+  const targetCenter = getRectCenter(targetBounds);
+
+  if (direction.x === 1) {
+    return {
+      x: targetBounds.x + targetBounds.width + SNAP_GAP,
+      y: targetCenter.y - draggedSize.height / 2,
+    };
+  }
+
+  if (direction.x === -1) {
+    return {
+      x: targetBounds.x - SNAP_GAP - draggedSize.width,
+      y: targetCenter.y - draggedSize.height / 2,
+    };
+  }
+
+  if (direction.y === 1) {
+    return {
+      x: targetCenter.x - draggedSize.width / 2,
+      y: targetBounds.y + targetBounds.height + SNAP_GAP,
+    };
+  }
+
+  return {
+    x: targetCenter.x - draggedSize.width / 2,
+    y: targetBounds.y - SNAP_GAP - draggedSize.height,
+  };
+}
+
+function arePerpendicular(left: Domino, right: Domino): boolean {
+  return isVertical(left) !== isVertical(right);
+}
+
+function isVertical(domino: Domino): boolean {
+  return domino.rotation === 90 || domino.rotation === 270;
 }
 
 function getDesiredHalfBounds(draggedLocal: Rect, targetHalfBounds: Rect, direction: Point): Rect {

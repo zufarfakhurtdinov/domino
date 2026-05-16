@@ -28,9 +28,9 @@ describe("view interaction", () => {
       draggedHalf: "a",
       targetDominoId: "target",
       targetHalf: "a",
-      snappedPosition: { x: 102, y: 0 },
+      snappedPosition: { x: 102, y: 50 },
     });
-    expect(result.candidate?.distance).toBeCloseTo(17.019, 3);
+    expect(result.candidate?.distance).toBeCloseTo(33.01, 3);
   });
 
   it("moves the whole connected group in preview state", () => {

@@ -17,6 +17,7 @@ for (const mode of modes) {
 
   test(`${mode.name} handles real drag gestures`, async ({ page }) => {
     await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
+    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
 
     const appBox = await page.locator("#app").boundingBox();
     expect(appBox).not.toBeNull();

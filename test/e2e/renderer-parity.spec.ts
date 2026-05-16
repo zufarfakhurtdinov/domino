@@ -32,11 +32,11 @@ for (const mode of modes) {
     await page.goto(`/domino/?fixture=snap&renderer=${mode.renderer}`);
     await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.drop === "function");
     await page.evaluate(() => {
-      window.__DOMINO_TEST__.drop("dragged", { x: 170, y: 32, rotation: 0 });
+      window.__DOMINO_TEST__.drop("dragged", { x: 140, y: 86, rotation: 0 });
     });
 
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 134, y: 32 });
+    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject({ x: 134, y: 82 });
     expect(state.links).toEqual([
       { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
     ]);
