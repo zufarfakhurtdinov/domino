@@ -1,27 +1,48 @@
-import { getDominoCells, getHalfCenter, getOccupiedCells } from "../src/core/geometry";
+import {
+  getBoundsOriginFromTransform,
+  getDominoBounds,
+  getHalfBounds,
+  getHalfCenter,
+  getTransformOrigin,
+} from "../src/core/geometry";
 import { domino } from "./core.fixtures";
 
 describe("domino geometry", () => {
   it.each([
-    [0, { a: { x: 2, y: 3 }, b: { x: 3, y: 3 } }],
-    [90, { a: { x: 2, y: 3 }, b: { x: 2, y: 4 } }],
-    [180, { a: { x: 3, y: 3 }, b: { x: 2, y: 3 } }],
-    [270, { a: { x: 2, y: 4 }, b: { x: 2, y: 3 } }],
-  ] as const)("returns half cells for %s degrees", (rotation, expected) => {
-    expect(getDominoCells(domino({ x: 2, y: 3, rotation }))).toEqual(expected);
+    [0, { a: { x: 32, y: 48, width: 132, height: 98 }, b: { x: 164, y: 48, width: 132, height: 98 } }],
+    [90, { a: { x: 32, y: 48, width: 98, height: 132 }, b: { x: 32, y: 180, width: 98, height: 132 } }],
+    [180, { a: { x: 164, y: 48, width: 132, height: 98 }, b: { x: 32, y: 48, width: 132, height: 98 } }],
+    [270, { a: { x: 32, y: 180, width: 98, height: 132 }, b: { x: 32, y: 48, width: 98, height: 132 } }],
+  ] as const)("returns half bounds for %s degrees", (rotation, expected) => {
+    expect({
+      a: getHalfBounds(domino({ x: 32, y: 48, rotation }), "a"),
+      b: getHalfBounds(domino({ x: 32, y: 48, rotation }), "b"),
+    }).toEqual(expected);
   });
 
-  it("returns occupied cells independent of half order", () => {
-    expect(getOccupiedCells(domino({ x: 2, y: 3, rotation: 180 }))).toEqual([
-      { x: 2, y: 3 },
-      { x: 3, y: 3 },
-    ]);
+  it("returns the domino bounds for rotated dominoes", () => {
+    expect(getDominoBounds(domino({ x: 32, y: 48, rotation: 270 }))).toEqual({
+      x: 32,
+      y: 48,
+      width: 98,
+      height: 264,
+    });
   });
 
-  it("returns the center of a half cell", () => {
-    expect(getHalfCenter(domino({ x: 2, y: 3, rotation: 90 }), "b")).toEqual({
-      x: 2.5,
-      y: 4.5,
+  it("returns the center of a rendered half", () => {
+    expect(getHalfCenter(domino({ x: 32, y: 48, rotation: 90 }), "b")).toEqual({
+      x: 81,
+      y: 246,
+    });
+  });
+
+  it.each([0, 90, 180, 270] as const)("round-trips through transform origin for %s degrees", (rotation) => {
+    const candidate = domino({ x: 32, y: 48, rotation });
+    const transform = getTransformOrigin(candidate);
+
+    expect(getBoundsOriginFromTransform(rotation, transform.x, transform.y)).toEqual({
+      x: 32,
+      y: 48,
     });
   });
 });

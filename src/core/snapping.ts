@@ -1,6 +1,14 @@
-import { getDominoCells, getOccupiedCells } from "./geometry";
+import {
+  getDominoBounds,
+  getHalfBounds,
+  getHalfLocalBounds,
+  getRectCenter,
+  HALF_WIDTH,
+  rectanglesOverlap,
+  SNAP_GAP,
+} from "./geometry";
 import { canMatch } from "./matching";
-import type { BoardState, Domino, DominoHalf, Link, Pair, Point, SnapCandidate } from "./types";
+import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
 
 export type SnapOptions = {
   threshold: number;
@@ -25,6 +33,7 @@ export function findSnapCandidate(
   }
 
   const candidates: SnapCandidate[] = [];
+  const threshold = options.threshold * HALF_WIDTH;
 
   for (const target of state.dominoes) {
     if (target.id === dragged.id) {
@@ -38,9 +47,15 @@ export function findSnapCandidate(
         }
 
         for (const direction of directions) {
-          const candidate = candidateForDirection(dragged, draggedHalf, target, targetHalf, direction);
+          const candidate = candidateForDirection(
+            dragged,
+            draggedHalf,
+            target,
+            targetHalf,
+            direction,
+          );
 
-          if (candidate.distance > options.threshold) {
+          if (candidate.distance > threshold) {
             continue;
           }
 
@@ -86,19 +101,12 @@ function candidateForDirection(
   targetHalf: DominoHalf,
   direction: Point,
 ): SnapCandidate {
-  const draggedCells = getDominoCells(dragged);
-  const targetCells = getDominoCells(target);
-  const draggedOffset = {
-    x: draggedCells[draggedHalf].x - dragged.x,
-    y: draggedCells[draggedHalf].y - dragged.y,
-  };
-  const desiredDraggedHalfCell = {
-    x: targetCells[targetHalf].x + direction.x,
-    y: targetCells[targetHalf].y + direction.y,
-  };
+  const draggedLocal = getHalfLocalBounds(dragged.rotation, draggedHalf);
+  const targetHalfBounds = getHalfBounds(target, targetHalf);
+  const desiredHalfBounds = getDesiredHalfBounds(draggedLocal, targetHalfBounds, direction);
   const snappedPosition = {
-    x: desiredDraggedHalfCell.x - draggedOffset.x,
-    y: desiredDraggedHalfCell.y - draggedOffset.y,
+    x: desiredHalfBounds.x - draggedLocal.x,
+    y: desiredHalfBounds.y - draggedLocal.y,
   };
 
   return {
@@ -111,16 +119,49 @@ function candidateForDirection(
   };
 }
 
+function getDesiredHalfBounds(draggedLocal: Rect, targetHalfBounds: Rect, direction: Point): Rect {
+  if (direction.x === 1) {
+    return {
+      x: targetHalfBounds.x + targetHalfBounds.width + SNAP_GAP,
+      y: getRectCenter(targetHalfBounds).y - draggedLocal.height / 2,
+      width: draggedLocal.width,
+      height: draggedLocal.height,
+    };
+  }
+
+  if (direction.x === -1) {
+    return {
+      x: targetHalfBounds.x - SNAP_GAP - draggedLocal.width,
+      y: getRectCenter(targetHalfBounds).y - draggedLocal.height / 2,
+      width: draggedLocal.width,
+      height: draggedLocal.height,
+    };
+  }
+
+  if (direction.y === 1) {
+    return {
+      x: getRectCenter(targetHalfBounds).x - draggedLocal.width / 2,
+      y: targetHalfBounds.y + targetHalfBounds.height + SNAP_GAP,
+      width: draggedLocal.width,
+      height: draggedLocal.height,
+    };
+  }
+
+  return {
+    x: getRectCenter(targetHalfBounds).x - draggedLocal.width / 2,
+    y: targetHalfBounds.y - SNAP_GAP - draggedLocal.height,
+    width: draggedLocal.width,
+    height: draggedLocal.height,
+  };
+}
+
 function collides(state: BoardState, dragged: Domino, snappedPosition: Point): boolean {
   const snappedDragged = { ...dragged, x: snappedPosition.x, y: snappedPosition.y };
-  const occupied = new Set(
-    state.dominoes
-      .filter((domino) => domino.id !== dragged.id)
-      .flatMap(getOccupiedCells)
-      .map(pointKey),
-  );
+  const bounds = getDominoBounds(snappedDragged);
 
-  return getOccupiedCells(snappedDragged).some((point) => occupied.has(pointKey(point)));
+  return state.dominoes
+    .filter((domino) => domino.id !== dragged.id)
+    .some((domino) => rectanglesOverlap(bounds, getDominoBounds(domino)));
 }
 
 function distanceBetween(left: Point, right: Point): number {
@@ -144,8 +185,4 @@ function hasLink(links: readonly Link[], target: Link): boolean {
       link.dominoId2 === target.dominoId2 &&
       link.half2 === target.half2,
   );
-}
-
-function pointKey(point: Point): string {
-  return `${point.x}:${point.y}`;
 }

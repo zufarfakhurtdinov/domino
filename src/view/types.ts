@@ -3,9 +3,8 @@ import type { BoardState, Content, DominoHalf, Link, Point, Rotation, SnapCandid
 export type ControlState = "default" | "hover" | "pressed";
 
 export type BoardMetrics = {
-  cellWidth: number;
-  cellHeight: number;
-  boardPadding: number;
+  halfWidth: number;
+  halfHeight: number;
   minBoardScale: number;
   maxBoardScale: number;
   boardScaleStep: number;

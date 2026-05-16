@@ -11,10 +11,10 @@ import { board, content, domino } from "./core.fixtures";
 
 describe("view transforms", () => {
   it.each([
-    [0, { x: 296, y: 260 }],
-    [90, { x: 372, y: 260 }],
-    [180, { x: 560, y: 336 }],
-    [270, { x: 296, y: 524 }],
+    [0, { x: 2, y: 3 }],
+    [90, { x: 100, y: 3 }],
+    [180, { x: 266, y: 101 }],
+    [270, { x: 2, y: 267 }],
   ] as const)("returns the visual transform for %s degrees", (rotation, expected) => {
     expect(getVisualTransform(domino({ x: 2, y: 3, rotation }), DEFAULT_BOARD_METRICS)).toEqual(
       expected,
@@ -36,7 +36,7 @@ describe("view transforms", () => {
   it("returns the detach control center between linked halves", () => {
     const state: BoardState = {
       dominoes: [
-        domino({ id: "dragged", a: content("cat_en"), x: 1, y: 0 }),
+        domino({ id: "dragged", a: content("cat_en"), x: 100, y: 17 }),
         domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
       ],
       links: [],
@@ -50,7 +50,7 @@ describe("view transforms", () => {
 
     expect(getLinkControlView(state, link, DEFAULT_BOARD_METRICS)).toEqual({
       link,
-      center: { x: 164, y: 70 },
+      center: { x: 99, y: 66 },
     });
   });
 
@@ -58,11 +58,11 @@ describe("view transforms", () => {
     expect(
       getSnapHighlightView(domino({ x: 1, y: 4, rotation: 90 }), DEFAULT_BOARD_METRICS),
     ).toEqual({
-      x: 240,
-      y: 336,
+      x: 99,
+      y: 4,
       rotation: 90,
       width: 256,
-      height: 68,
+      height: 90,
     });
   });
 

@@ -1,3 +1,4 @@
+import { commitDrop, detachFirstLink, SNAP_THRESHOLD } from "./app/actions";
 import { createFixtureBoard, pairs } from "./app/model";
 import { detachDomino, rotateDomino } from "./core/board";
 import { applySnap } from "./core/snapping";
@@ -68,7 +69,7 @@ const renderer = new DomRenderer(appContainer, {
         rotation: domino.rotation,
       },
       pairs,
-      0.4,
+      SNAP_THRESHOLD,
       DEFAULT_BOARD_METRICS,
     );
 
@@ -119,6 +120,24 @@ window.__DOMINO_TEST__ = {
   getSnapCandidate: () => structuredClone(currentSnapCandidate),
   getRotateControlState: (dominoId: string) => rotateControlStates.get(dominoId) ?? null,
   getScale: () => boardScale,
+  rotate: (dominoId: string) => {
+    state = rotateDomino(state, dominoId);
+    previewState = null;
+    currentSnapCandidate = null;
+    render();
+  },
+  drop: (dominoId, visualState) => {
+    state = commitDrop(state, dominoId, visualState, pairs, DEFAULT_BOARD_METRICS);
+    previewState = null;
+    currentSnapCandidate = null;
+    render();
+  },
+  detachFirstLink: () => {
+    state = detachFirstLink(state);
+    previewState = null;
+    currentSnapCandidate = null;
+    render();
+  },
 };
 
 function resizeStage(): void {

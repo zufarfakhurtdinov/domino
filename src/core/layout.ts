@@ -1,5 +1,5 @@
-import { getOccupiedCells } from "./geometry";
-import type { BoardState, Content, Domino, Point, Rotation } from "./types";
+import { getDominoBounds, getRotationSize, rectanglesOverlap, HALF_HEIGHT, HALF_WIDTH } from "./geometry";
+import type { BoardState, Content, Domino, Rect, Rotation } from "./types";
 
 export type DominoInput = {
   id: string;
@@ -8,23 +8,21 @@ export type DominoInput = {
 };
 
 export type LayoutOptions = {
-  columns: number;
-  rows: number;
+  width: number;
+  height: number;
   seed: number;
 };
 
 export function createInitialBoard(inputs: DominoInput[], options: LayoutOptions): BoardState {
   const random = seededRandom(options.seed);
   const dominoes: Domino[] = [];
-  const occupied = new Set<string>();
+  const occupied: Rect[] = [];
 
   for (const input of inputs) {
     const domino = placeDomino(input, options, random, occupied);
     dominoes.push(domino);
 
-    for (const cell of getOccupiedCells(domino)) {
-      occupied.add(pointKey(cell));
-    }
+    occupied.push(getDominoBounds(domino));
   }
 
   return { dominoes, links: [] };
@@ -34,14 +32,15 @@ function placeDomino(
   input: DominoInput,
   options: LayoutOptions,
   random: () => number,
-  occupied: Set<string>,
+  occupied: readonly Rect[],
 ): Domino {
-  const maxAttempts = options.columns * options.rows * 8;
+  const maxAttempts = Math.ceil((options.width * options.height) / (HALF_WIDTH * HALF_HEIGHT)) * 8;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const rotation: Rotation = random() < 0.5 ? 0 : 90;
-    const maxX = rotation === 0 ? options.columns - 2 : options.columns - 1;
-    const maxY = rotation === 0 ? options.rows - 1 : options.rows - 2;
+    const size = getRotationSize(rotation);
+    const maxX = options.width - size.width;
+    const maxY = options.height - size.height;
 
     if (maxX < 0 || maxY < 0) {
       break;
@@ -54,7 +53,7 @@ function placeDomino(
       rotation,
     };
 
-    if (getOccupiedCells(domino).every((cell) => !occupied.has(pointKey(cell)))) {
+    if (occupied.every((rect) => !rectanglesOverlap(rect, getDominoBounds(domino)))) {
       return domino;
     }
   }
@@ -73,8 +72,4 @@ function seededRandom(seed: number): () => number {
 
 function randomInt(random: () => number, exclusiveMax: number): number {
   return Math.floor(random() * exclusiveMax);
-}
-
-function pointKey(point: Point): string {
-  return `${point.x}:${point.y}`;
 }

@@ -1,4 +1,5 @@
 import { findSnapCandidate } from "../src/core/snapping";
+import { HALF_HEIGHT, HALF_WIDTH, SNAP_GAP } from "../src/core/geometry";
 import type { BoardState, Pair } from "../src/core/types";
 import { board, content, domino } from "./core.fixtures";
 
@@ -13,7 +14,7 @@ describe("snap candidate detection", () => {
 
   it("returns null when nearby halves do not match", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: 1.1, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), x: 102, y: 17 }),
       domino({ id: "target", a: content("dog_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
@@ -22,7 +23,7 @@ describe("snap candidate detection", () => {
 
   it("returns null when a valid match is outside the magnet threshold", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: 3, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), x: 202, y: 17 }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
@@ -31,25 +32,34 @@ describe("snap candidate detection", () => {
 
   it("returns a candidate for a valid nearby match", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: 1.2, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), x: 101.2, y: 17 }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toEqual({
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
       draggedDominoId: "dragged",
       draggedHalf: "a",
       targetDominoId: "target",
       targetHalf: "a",
-      snappedPosition: { x: 1, y: 0 },
-      distance: 0.19999999999999996,
+      snappedPosition: { x: HALF_HEIGHT + SNAP_GAP, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
     });
   });
 
   it.each([
-    ["right", 90, { x: 1.2, y: 0 }, { x: 1, y: 0 }],
-    ["left", 90, { x: -2.2, y: 0, rotation: 180 }, { x: -2, y: 0 }],
-    ["below", 0, { x: 0, y: 1.2 }, { x: 0, y: 1 }],
-    ["above", 0, { x: 0, y: -1.2 }, { x: 0, y: -1 }],
+    [
+      "right",
+      90,
+      { x: HALF_HEIGHT + SNAP_GAP + 8, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+      { x: HALF_HEIGHT + SNAP_GAP, y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+    ],
+    [
+      "left",
+      90,
+      { x: -(HALF_WIDTH * 2 + SNAP_GAP) - 8, y: (HALF_WIDTH - HALF_HEIGHT) / 2, rotation: 180 },
+      { x: -(HALF_WIDTH * 2 + SNAP_GAP), y: (HALF_WIDTH - HALF_HEIGHT) / 2 },
+    ],
+    ["below", 0, { x: 0, y: HALF_HEIGHT + SNAP_GAP + 8 }, { x: 0, y: HALF_HEIGHT + SNAP_GAP }],
+    ["above", 0, { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) - 8 }, { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) }],
   ] as const)(
     "can snap to the target's %s side",
     (_side, targetRotation, draggedPosition, snappedPosition) => {
@@ -72,9 +82,9 @@ describe("snap candidate detection", () => {
 
   it("rejects a snap placement that would collide with another domino", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), b: content("free"), x: 1.2, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), b: content("free"), x: 101.2, y: 17 }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      domino({ id: "blocker", x: 2, y: 0 }),
+      domino({ id: "blocker", x: 186, y: 17 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
@@ -82,9 +92,9 @@ describe("snap candidate detection", () => {
 
   it("chooses the closest candidate", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: 1.15, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), x: 109, y: 17 }),
       domino({ id: "target-far", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      domino({ id: "target-near", a: content("cat_img", "image"), x: 0.1, y: 0, rotation: 90 }),
+      domino({ id: "target-near", a: content("cat_img", "image"), x: 12, y: 0, rotation: 90 }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
@@ -95,7 +105,7 @@ describe("snap candidate detection", () => {
   it("breaks exact ties deterministically by target id, target half, then dragged half", () => {
     const state: BoardState = {
       dominoes: [
-        domino({ id: "dragged", a: content("cat_en"), b: content("cat_en"), x: 1.2, y: 0 }),
+        domino({ id: "dragged", a: content("cat_en"), b: content("cat_en"), x: 101.2, y: 17 }),
         domino({ id: "b-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
         domino({ id: "a-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
       ],

@@ -13,6 +13,11 @@ export type Point = {
   y: number;
 };
 
+export type Rect = Point & {
+  width: number;
+  height: number;
+};
+
 export type DominoHalf = "a" | "b";
 
 export type Domino = {

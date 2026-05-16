@@ -1,5 +1,10 @@
 import { createInitialBoard } from "../src/core/layout";
-import { getOccupiedCells } from "../src/core/geometry";
+import {
+  getDominoBounds,
+  HALF_HEIGHT,
+  HALF_WIDTH,
+  rectanglesOverlap,
+} from "../src/core/geometry";
 import { content } from "./core.fixtures";
 
 const inputs = [
@@ -7,10 +12,11 @@ const inputs = [
   { id: "dog", a: content("dog_en"), b: content("dog_img", "image") },
   { id: "bird", a: content("bird_en"), b: content("bird_audio", "audio") },
 ];
+const layoutOptions = { width: 8 * HALF_WIDTH, height: 8 * HALF_HEIGHT, seed: 123 };
 
 describe("initial layout", () => {
   it("creates one domino per input with stable ids and content", () => {
-    const state = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
+    const state = createInitialBoard(inputs, layoutOptions);
 
     expect(state.dominoes.map((domino) => domino.id)).toEqual(["cat", "dog", "bird"]);
     expect(state.dominoes[0].a).toBe(inputs[0].a);
@@ -19,32 +25,42 @@ describe("initial layout", () => {
   });
 
   it("uses only horizontal or vertical starting rotations", () => {
-    const state = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
+    const state = createInitialBoard(inputs, layoutOptions);
 
     expect(state.dominoes.every((domino) => domino.rotation === 0 || domino.rotation === 90)).toBe(
       true,
     );
   });
 
-  it("places every occupied cell inside the board bounds", () => {
-    const state = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
-    const cells = state.dominoes.flatMap(getOccupiedCells);
+  it("places every domino inside the board bounds", () => {
+    const state = createInitialBoard(inputs, layoutOptions);
+    const bounds = state.dominoes.map(getDominoBounds);
 
-    expect(cells.every((cell) => cell.x >= 0 && cell.x < 8 && cell.y >= 0 && cell.y < 8)).toBe(
-      true,
-    );
+    expect(
+      bounds.every(
+        (rect) =>
+          rect.x >= 0 &&
+          rect.y >= 0 &&
+          rect.x + rect.width <= layoutOptions.width &&
+          rect.y + rect.height <= layoutOptions.height,
+      ),
+    ).toBe(true);
   });
 
   it("does not overlap starting dominoes", () => {
-    const state = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
-    const occupied = state.dominoes.flatMap(getOccupiedCells).map((cell) => `${cell.x}:${cell.y}`);
+    const state = createInitialBoard(inputs, layoutOptions);
+    const bounds = state.dominoes.map(getDominoBounds);
 
-    expect(new Set(occupied).size).toBe(occupied.length);
+    expect(
+      bounds.every((rect, index) =>
+        bounds.slice(index + 1).every((other) => !rectanglesOverlap(rect, other)),
+      ),
+    ).toBe(true);
   });
 
   it("is deterministic for the same seed", () => {
-    const first = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
-    const second = createInitialBoard(inputs, { columns: 8, rows: 8, seed: 123 });
+    const first = createInitialBoard(inputs, layoutOptions);
+    const second = createInitialBoard(inputs, layoutOptions);
 
     expect(second).toEqual(first);
   });

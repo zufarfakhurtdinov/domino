@@ -1,5 +1,9 @@
-import { getDominoCells } from "../core/geometry";
-import type { BoardState, Domino, Link, Point, Rotation } from "../core/types";
+import {
+  getBoundsOriginFromTransform,
+  getHalfBounds,
+  getTransformOrigin,
+} from "../core/geometry";
+import type { BoardState, Domino, Link, Point, Rect, Rotation } from "../core/types";
 import type { BoardMetrics, DragVisualState, LinkControlView, SnapHighlightView } from "./types";
 
 export function normalizeRotation(rotation: number): Rotation {
@@ -11,72 +15,35 @@ export function normalizeRotation(rotation: number): Rotation {
   return 0;
 }
 
-export function getVisualTransform(domino: Domino, metrics: BoardMetrics): Point {
-  const origin = getBoardPixelOrigin(domino, metrics);
-
-  if (domino.rotation === 90) {
-    return { x: origin.x + metrics.cellHeight, y: origin.y };
-  }
-
-  if (domino.rotation === 180) {
-    return {
-      x: origin.x + metrics.cellWidth * 2,
-      y: origin.y + metrics.cellHeight,
-    };
-  }
-
-  if (domino.rotation === 270) {
-    return { x: origin.x, y: origin.y + metrics.cellWidth * 2 };
-  }
-
-  return origin;
+export function getVisualTransform(domino: Domino, _metrics: BoardMetrics): Point {
+  return getTransformOrigin(domino);
 }
 
 export function getVisualOriginForRotation(
   rotation: Rotation,
   x: number,
   y: number,
-  metrics: BoardMetrics,
+  _metrics: BoardMetrics,
 ): Point {
-  if (rotation === 90) {
-    return { x: x - metrics.cellHeight, y };
-  }
-
-  if (rotation === 180) {
-    return {
-      x: x - metrics.cellWidth * 2,
-      y: y - metrics.cellHeight,
-    };
-  }
-
-  if (rotation === 270) {
-    return { x, y: y - metrics.cellWidth * 2 };
-  }
-
-  return { x, y };
+  return getBoundsOriginFromTransform(rotation, x, y);
 }
 
 export function getBoardPositionFromVisualState(
   visualState: DragVisualState,
   metrics: BoardMetrics,
 ): Point {
-  const origin = getVisualOriginForRotation(
+  return getVisualOriginForRotation(
     visualState.rotation,
     visualState.x,
     visualState.y,
     metrics,
   );
-
-  return {
-    x: (origin.x - metrics.boardPadding) / metrics.cellWidth,
-    y: (origin.y - metrics.boardPadding) / metrics.cellHeight,
-  };
 }
 
 export function getLinkControlView(
   state: BoardState,
   link: Link,
-  metrics: BoardMetrics,
+  _metrics: BoardMetrics,
 ): LinkControlView | null {
   const first = state.dominoes.find((domino) => domino.id === link.dominoId1);
   const second = state.dominoes.find((domino) => domino.id === link.dominoId2);
@@ -84,19 +51,32 @@ export function getLinkControlView(
     return null;
   }
 
-  const firstCell = getDominoCells(first)[link.half1];
-  const secondCell = getDominoCells(second)[link.half2];
+  const firstBounds = getHalfBounds(first, link.half1);
+  const secondBounds = getHalfBounds(second, link.half2);
+
+  const horizontal = getLinkOrientation(firstBounds, secondBounds) === "horizontal";
+  const left = firstBounds.x <= secondBounds.x ? firstBounds : secondBounds;
+  const right = left === firstBounds ? secondBounds : firstBounds;
+  const top = firstBounds.y <= secondBounds.y ? firstBounds : secondBounds;
+  const bottom = top === firstBounds ? secondBounds : firstBounds;
 
   return {
     link,
-    center: {
-      x:
-        metrics.boardPadding +
-        ((firstCell.x + secondCell.x + 1) / 2) * metrics.cellWidth,
-      y:
-        metrics.boardPadding +
-        ((firstCell.y + secondCell.y + 1) / 2) * metrics.cellHeight,
-    },
+    center: horizontal
+      ? {
+          x: (left.x + left.width + right.x) / 2,
+          y: midpoint(
+            Math.max(firstBounds.y, secondBounds.y),
+            Math.min(firstBounds.y + firstBounds.height, secondBounds.y + secondBounds.height),
+          ),
+        }
+      : {
+          x: midpoint(
+            Math.max(firstBounds.x, secondBounds.x),
+            Math.min(firstBounds.x + firstBounds.width, secondBounds.x + secondBounds.width),
+          ),
+          y: (top.y + top.height + bottom.y) / 2,
+        },
   };
 }
 
@@ -110,14 +90,36 @@ export function getSnapHighlightView(
     x: transform.x,
     y: transform.y,
     rotation: domino.rotation,
-    width: metrics.cellWidth * 2 - 8,
-    height: metrics.cellHeight - 8,
+    width: metrics.halfWidth * 2 - 8,
+    height: metrics.halfHeight - 8,
   };
 }
 
-function getBoardPixelOrigin(domino: Domino, metrics: BoardMetrics): Point {
-  return {
-    x: metrics.boardPadding + domino.x * metrics.cellWidth,
-    y: metrics.boardPadding + domino.y * metrics.cellHeight,
-  };
+function midpoint(start: number, end: number): number {
+  return (start + end) / 2;
+}
+
+function getLinkOrientation(first: Rect, second: Rect): "horizontal" | "vertical" {
+  const horizontalGap = getAxisGap(first.x, first.width, second.x, second.width);
+  const verticalGap = getAxisGap(first.y, first.height, second.y, second.height);
+
+  if (horizontalGap > 0 && verticalGap <= 0) {
+    return "horizontal";
+  }
+
+  if (verticalGap > 0 && horizontalGap <= 0) {
+    return "vertical";
+  }
+
+  if (horizontalGap > 0 || verticalGap > 0) {
+    return horizontalGap <= verticalGap ? "horizontal" : "vertical";
+  }
+
+  return Math.abs(first.x - second.x) >= Math.abs(first.y - second.y)
+    ? "horizontal"
+    : "vertical";
+}
+
+function getAxisGap(firstStart: number, firstSize: number, secondStart: number, secondSize: number): number {
+  return Math.max(firstStart, secondStart) - Math.min(firstStart + firstSize, secondStart + secondSize);
 }

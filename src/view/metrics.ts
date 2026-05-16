@@ -1,9 +1,9 @@
+import { HALF_HEIGHT, HALF_WIDTH } from "../core/geometry";
 import type { BoardMetrics, BoardRect, BoardViewport } from "./types";
 
 export const DEFAULT_BOARD_METRICS: BoardMetrics = {
-  cellWidth: 132,
-  cellHeight: 76,
-  boardPadding: 32,
+  halfWidth: HALF_WIDTH,
+  halfHeight: HALF_HEIGHT,
   minBoardScale: 0.4,
   maxBoardScale: 1.8,
   boardScaleStep: 0.2,

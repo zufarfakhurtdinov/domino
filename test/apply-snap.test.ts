@@ -7,20 +7,20 @@ const candidate: SnapCandidate = {
   draggedHalf: "a",
   targetDominoId: "target",
   targetHalf: "a",
-  snappedPosition: { x: 1, y: 0 },
+  snappedPosition: { x: 100, y: 17 },
   distance: 0.2,
 };
 
 describe("apply snap", () => {
   it("moves the dragged domino to the snapped position and creates a link", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: 1.2, y: 0 }),
+      domino({ id: "dragged", a: content("cat_en"), x: 101.2, y: 17 }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
     const next = applySnap(state, candidate);
 
-    expect(next.dominoes[0]).toEqual({ ...state.dominoes[0], x: 1, y: 0 });
+    expect(next.dominoes[0]).toEqual({ ...state.dominoes[0], x: 100, y: 17 });
     expect(next.links).toEqual([
       { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
     ]);

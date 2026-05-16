@@ -1,7 +1,7 @@
+import { commitDrop, detachFirstLink, SNAP_THRESHOLD } from "./app/actions";
 import Konva from "konva";
 import { createFixtureBoard, pairs } from "./app/model";
 import { detachDomino, rotateDomino } from "./core/board";
-import { getOccupiedCells } from "./core/geometry";
 import { applySnap } from "./core/snapping";
 import type { Content, Domino, DominoHalf, Link, SnapCandidate } from "./core/types";
 import { derivePreviewResult } from "./view/interaction";
@@ -14,7 +14,7 @@ import {
 } from "./view/transforms";
 import "./styles.css";
 
-const { cellWidth, cellHeight, boardScaleStep } = DEFAULT_BOARD_METRICS;
+const { halfWidth, halfHeight, boardScaleStep } = DEFAULT_BOARD_METRICS;
 let stageWidth = 0;
 let stageHeight = 0;
 let boardScale = 1;
@@ -51,6 +51,21 @@ window.__DOMINO_TEST__ = {
   getSnapCandidate: () => structuredClone(currentSnapCandidate),
   getRotateControlState: (dominoId: string) => rotateControlStates.get(dominoId) ?? null,
   getScale: () => boardScale,
+  rotate: (dominoId: string) => {
+    state = rotateDomino(state, dominoId);
+    currentSnapCandidate = null;
+    render();
+  },
+  drop: (dominoId, visualState) => {
+    state = commitDrop(state, dominoId, visualState, pairs, DEFAULT_BOARD_METRICS);
+    currentSnapCandidate = null;
+    render();
+  },
+  detachFirstLink: () => {
+    state = detachFirstLink(state);
+    currentSnapCandidate = null;
+    render();
+  },
 };
 
 function resizeStage(): void {
@@ -187,8 +202,8 @@ function renderDomino(domino: Domino): void {
     draggable: true,
   });
 
-  renderHalf(group, { x: 0, y: 0 }, domino.a, "a");
-  renderHalf(group, { x: 1, y: 0 }, domino.b, "b");
+  renderHalf(group, { column: 0, row: 0 }, domino.a, "a");
+  renderHalf(group, { column: 1, row: 0 }, domino.b, "b");
   renderRotateControl(group, domino);
   group.on("dragmove", () => {
     currentSnapCandidate = derivePreviewResult(
@@ -200,7 +215,7 @@ function renderDomino(domino: Domino): void {
         rotation: normalizeRotation(group.rotation()),
       },
       pairs,
-      0.4,
+      SNAP_THRESHOLD,
       DEFAULT_BOARD_METRICS,
     ).candidate;
     renderSnapHighlight(currentSnapCandidate);
@@ -218,7 +233,7 @@ function renderDomino(domino: Domino): void {
           rotation: normalizeRotation(group.rotation()),
         },
         pairs,
-        0.4,
+        SNAP_THRESHOLD,
         DEFAULT_BOARD_METRICS,
       ).previewState;
     }
@@ -321,16 +336,21 @@ function renderSnapHighlight(candidate: SnapCandidate | null): void {
   layer.batchDraw();
 }
 
-function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content: Content, half: DominoHalf): void {
-  const x = cell.x * cellWidth;
-  const y = cell.y * cellHeight;
+function renderHalf(
+  group: Konva.Group,
+  localPosition: { column: number; row: number },
+  content: Content,
+  half: DominoHalf,
+): void {
+  const x = localPosition.column * halfWidth;
+  const y = localPosition.row * halfHeight;
 
   group.add(
     new Konva.Rect({
       x,
       y,
-      width: cellWidth,
-      height: cellHeight,
+      width: halfWidth,
+      height: halfHeight,
       fill: half === "a" ? "#f8fafc" : "#eef6ff",
       stroke: "#111827",
       strokeWidth: 2,
@@ -342,7 +362,7 @@ function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content:
     new Konva.Text({
       x: x + 12,
       y: y + 25,
-      width: cellWidth - 24,
+      width: halfWidth - 24,
       text: content.value,
       fill: "#111827",
       fontFamily: "Arial, sans-serif",
@@ -356,7 +376,7 @@ function renderRotateControl(
   group: Konva.Group,
   domino: Domino,
 ): void {
-  const center = { x: cellWidth * 2 - 18, y: 18 };
+  const center = { x: halfWidth * 2 - 18, y: 18 };
   const control = new Konva.Group({ x: center.x, y: center.y, name: `rotate-${domino.id}` });
   rotateControlStates.set(domino.id, "default");
 
