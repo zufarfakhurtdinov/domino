@@ -1,17 +1,19 @@
 import Konva from "konva";
 import { detachDomino, rotateDomino } from "./core/board";
-import { moveConnectedGroup } from "./core/connections";
-import { getDominoCells, getOccupiedCells } from "./core/geometry";
-import { applySnap, findSnapCandidate } from "./core/snapping";
-import type { BoardState, Content, Domino, DominoHalf, Link, Pair, Point, SnapCandidate } from "./core/types";
+import { getOccupiedCells } from "./core/geometry";
+import { applySnap } from "./core/snapping";
+import type { BoardState, Content, Domino, DominoHalf, Link, Pair, SnapCandidate } from "./core/types";
+import { derivePreviewResult } from "./view/interaction";
+import { clampBoardScale, DEFAULT_BOARD_METRICS, getBoardRect } from "./view/metrics";
+import {
+  getLinkControlView,
+  getSnapHighlightView,
+  getVisualTransform,
+  normalizeRotation,
+} from "./view/transforms";
 import "./styles.css";
 
-const cellWidth = 132;
-const cellHeight = 76;
-const boardPadding = 32;
-const minBoardScale = 0.4;
-const maxBoardScale = 1.8;
-const boardScaleStep = 0.2;
+const { cellWidth, cellHeight, boardScaleStep } = DEFAULT_BOARD_METRICS;
 let stageWidth = 0;
 let stageHeight = 0;
 let boardScale = 1;
@@ -74,12 +76,13 @@ function getStageSize(): { width: number; height: number } {
 function render(): void {
   layer.destroyChildren();
 
+  const boardRect = getBoardRect({ width: stageWidth, height: stageHeight, scale: boardScale });
   layer.add(
     new Konva.Rect({
       x: 0,
       y: 0,
-      width: stageWidth / boardScale,
-      height: stageHeight / boardScale,
+      width: boardRect.width,
+      height: boardRect.height,
       fill: "#ffffff",
     }),
   );
@@ -154,7 +157,7 @@ function createZoomIcon(kind: "plus" | "minus"): string {
 }
 
 function setBoardScale(nextScale: number): void {
-  const clampedScale = Math.min(maxBoardScale, Math.max(minBoardScale, Number(nextScale.toFixed(2))));
+  const clampedScale = clampBoardScale(nextScale, DEFAULT_BOARD_METRICS);
   if (clampedScale === boardScale) {
     updateZoomControls();
     return;
@@ -170,17 +173,16 @@ function updateZoomControls(): void {
   const zoomOutButton = zoomControls.querySelector<HTMLButtonElement>(".zoom-out");
 
   if (zoomInButton) {
-    zoomInButton.disabled = boardScale >= maxBoardScale;
+    zoomInButton.disabled = boardScale >= DEFAULT_BOARD_METRICS.maxBoardScale;
   }
 
   if (zoomOutButton) {
-    zoomOutButton.disabled = boardScale <= minBoardScale;
+    zoomOutButton.disabled = boardScale <= DEFAULT_BOARD_METRICS.minBoardScale;
   }
 }
 
 function renderDomino(domino: Domino): void {
-  const cells = getDominoCells(domino);
-  const transform = getVisualTransform(domino);
+  const transform = getVisualTransform(domino, DEFAULT_BOARD_METRICS);
   const group = new Konva.Group({
     x: transform.x,
     y: transform.y,
@@ -193,16 +195,36 @@ function renderDomino(domino: Domino): void {
   renderHalf(group, { x: 1, y: 0 }, domino.b, "b");
   renderRotateControl(group, domino);
   group.on("dragmove", () => {
-    currentSnapCandidate = findSnapCandidate(getPreviewState(domino.id, group), domino.id, pairs, {
-      threshold: 0.4,
-    });
+    currentSnapCandidate = derivePreviewResult(
+      state,
+      domino.id,
+      {
+        x: group.x(),
+        y: group.y(),
+        rotation: normalizeRotation(group.rotation()),
+      },
+      pairs,
+      0.4,
+      DEFAULT_BOARD_METRICS,
+    ).candidate;
     renderSnapHighlight(currentSnapCandidate);
   });
   group.on("dragend", () => {
     if (currentSnapCandidate) {
       state = applySnap(state, currentSnapCandidate);
     } else {
-      state = moveConnectedGroup(state, domino.id, getGroupBoardPosition(group));
+      state = derivePreviewResult(
+        state,
+        domino.id,
+        {
+          x: group.x(),
+          y: group.y(),
+          rotation: normalizeRotation(group.rotation()),
+        },
+        pairs,
+        0.4,
+        DEFAULT_BOARD_METRICS,
+      ).previewState;
     }
     currentSnapCandidate = null;
     render();
@@ -212,14 +234,14 @@ function renderDomino(domino: Domino): void {
 }
 
 function renderDetachControl(link: Link): void {
-  const center = getLinkCenter(link);
-  if (!center) {
+  const linkView = getLinkControlView(state, link, DEFAULT_BOARD_METRICS);
+  if (!linkView) {
     return;
   }
 
   const control = new Konva.Group({
-    x: center.x,
-    y: center.y,
+    x: linkView.center.x,
+    y: linkView.center.y,
   });
 
   control.add(
@@ -256,22 +278,6 @@ function renderDetachControl(link: Link): void {
   layer.add(control);
 }
 
-function getLinkCenter(link: Link): Point | null {
-  const first = state.dominoes.find((domino) => domino.id === link.dominoId1);
-  const second = state.dominoes.find((domino) => domino.id === link.dominoId2);
-  if (!first || !second) {
-    return null;
-  }
-
-  const firstCell = getDominoCells(first)[link.half1];
-  const secondCell = getDominoCells(second)[link.half2];
-
-  return {
-    x: boardPadding + ((firstCell.x + secondCell.x + 1) / 2) * cellWidth,
-    y: boardPadding + ((firstCell.y + secondCell.y + 1) / 2) * cellHeight,
-  };
-}
-
 function renderSnapHighlight(candidate: SnapCandidate | null): void {
   layer.find(".snap-highlight").forEach((node) => node.destroy());
 
@@ -291,11 +297,11 @@ function renderSnapHighlight(candidate: SnapCandidate | null): void {
     x: candidate.snappedPosition.x,
     y: candidate.snappedPosition.y,
   };
-  const transform = getVisualTransform(snappedDomino);
+  const highlightView = getSnapHighlightView(snappedDomino, DEFAULT_BOARD_METRICS);
   const group = new Konva.Group({
-    x: transform.x,
-    y: transform.y,
-    rotation: snappedDomino.rotation,
+    x: highlightView.x,
+    y: highlightView.y,
+    rotation: highlightView.rotation,
     listening: false,
     name: "snap-highlight",
   });
@@ -304,8 +310,8 @@ function renderSnapHighlight(candidate: SnapCandidate | null): void {
     new Konva.Rect({
       x: 4,
       y: 4,
-      width: cellWidth * 2 - 8,
-      height: cellHeight - 8,
+      width: highlightView.width,
+      height: highlightView.height,
       stroke: "#16a34a",
       strokeWidth: 4,
       dash: [8, 5],
@@ -317,20 +323,6 @@ function renderSnapHighlight(candidate: SnapCandidate | null): void {
   layer.add(group);
 
   layer.batchDraw();
-}
-
-function getPreviewState(dominoId: string, group: Konva.Group): BoardState {
-  return moveConnectedGroup(state, dominoId, getGroupBoardPosition(group));
-}
-
-function getGroupBoardPosition(group: Konva.Group): Point {
-  const rotation = normalizeRotation(group.rotation());
-  const origin = getVisualOriginForRotation(rotation, group.x(), group.y());
-
-  return {
-    x: (origin.x - boardPadding) / cellWidth,
-    y: (origin.y - boardPadding) / cellHeight,
-  };
 }
 
 function renderHalf(group: Konva.Group, cell: { x: number; y: number }, content: Content, half: DominoHalf): void {
@@ -432,67 +424,6 @@ function renderRotateControl(
   });
 
   group.add(control);
-}
-
-function toLocalCell(cell: Point, domino: Domino): Point {
-  return {
-    x: cell.x - domino.x,
-    y: cell.y - domino.y,
-  };
-}
-
-function getVisualTransform(domino: Domino): Point {
-  const origin = {
-    x: boardPadding + domino.x * cellWidth,
-    y: boardPadding + domino.y * cellHeight,
-  };
-
-  if (domino.rotation === 90) {
-    return { x: origin.x + cellHeight, y: origin.y };
-  }
-
-  if (domino.rotation === 180) {
-    return { x: origin.x + cellWidth * 2, y: origin.y + cellHeight };
-  }
-
-  if (domino.rotation === 270) {
-    return { x: origin.x, y: origin.y + cellWidth * 2 };
-  }
-
-  return origin;
-}
-
-function getVisualOriginForRotation(rotation: Domino["rotation"], x: number, y: number): Point {
-  if (rotation === 90) {
-    return { x: x - cellHeight, y };
-  }
-
-  if (rotation === 180) {
-    return { x: x - cellWidth * 2, y: y - cellHeight };
-  }
-
-  if (rotation === 270) {
-    return { x, y: y - cellWidth * 2 };
-  }
-
-  return { x, y };
-}
-
-function normalizeRotation(rotation: number): Domino["rotation"] {
-  const normalized = ((rotation % 360) + 360) % 360;
-  if (normalized === 90 || normalized === 180 || normalized === 270) {
-    return normalized;
-  }
-
-  return 0;
-}
-
-function getCellBounds(cells: Point[]): { minX: number; minY: number; maxX: number } {
-  return {
-    minX: Math.min(...cells.map((cell) => cell.x)),
-    minY: Math.min(...cells.map((cell) => cell.y)),
-    maxX: Math.max(...cells.map((cell) => cell.x)),
-  };
 }
 
 function createFixtureBoard(fixture: string | null): BoardState {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("renders the merged demo board by default", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/");
+  await page.goto("/");
 
   await expect(page.locator("#app canvas")).toBeVisible();
 
@@ -20,7 +20,7 @@ test("renders the merged demo board by default", async ({ page }) => {
 });
 
 test("renders the fixed domino board to canvas", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+  await page.goto("/?fixture=basic");
 
   await expect(page.locator("#app canvas")).toBeVisible();
   const viewport = page.viewportSize();
@@ -57,7 +57,7 @@ test("renders the fixed domino board to canvas", async ({ page }) => {
 });
 
 test("rotates a domino by clicking its canvas rotate control", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+  await page.goto("/?fixture=basic");
 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
@@ -78,7 +78,7 @@ test("rotates a domino by clicking its canvas rotate control", async ({ page }) 
 });
 
 test("renders a rotated domino as a rigid visual rotation", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+  await page.goto("/?fixture=basic");
 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
@@ -125,7 +125,7 @@ test("renders a rotated domino as a rigid visual rotation", async ({ page }) => 
 });
 
 test("drags a domino across the canvas and updates board state", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=basic");
+  await page.goto("/?fixture=basic");
 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
@@ -142,7 +142,7 @@ test("drags a domino across the canvas and updates board state", async ({ page }
 });
 
 test("shows a snap candidate while dragging and applies it on release", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=snap");
+  await page.goto("/?fixture=snap");
 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
@@ -168,7 +168,7 @@ test("shows a snap candidate while dragging and applies it on release", async ({
 });
 
 test("renders the snap highlight with the rigid rotated shape for a 90-degree domino", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=snap-rotated");
+  await page.goto("/?fixture=snap-rotated");
 
   const appBox = await page.locator("#app").boundingBox();
   expect(appBox).not.toBeNull();
@@ -226,7 +226,7 @@ test("renders the snap highlight with the rigid rotated shape for a 90-degree do
 });
 
 test("detaches linked dominoes from a canvas control", async ({ page }) => {
-  await page.goto("http://127.0.0.1:5173/?fixture=linked");
+  await page.goto("/?fixture=linked");
 
   await expect.poll(async () => {
     const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
