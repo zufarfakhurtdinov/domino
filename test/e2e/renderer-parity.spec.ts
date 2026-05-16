@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const modes = [
   { name: "konva", renderer: "konva" },
   { name: "svg", renderer: "svg" },
+  { name: "dom", renderer: "dom" },
 ] as const;
 
 for (const mode of modes) {

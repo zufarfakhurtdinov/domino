@@ -20,6 +20,75 @@ body {
   height: 100%;
 }
 
+.board-dom {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.board-surface {
+  position: absolute;
+  inset: 0 auto auto 0;
+  background: #ffffff;
+  transform-origin: top left;
+}
+
+.domino-card {
+  position: absolute;
+  transform-origin: top left;
+}
+
+.domino-half {
+  position: absolute;
+  border: 2px solid #111827;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  color: #111827;
+  font-size: 20px;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.domino-rotate-control {
+  position: absolute;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 19px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.snap-highlight {
+  position: absolute;
+  box-sizing: border-box;
+  border: 4px dashed #16a34a;
+  border-radius: 8px;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.domino-detach-control {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
 .zoom-controls {
   position: absolute;
   top: 50%;
