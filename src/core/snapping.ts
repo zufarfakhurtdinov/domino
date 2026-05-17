@@ -48,7 +48,7 @@ export function findSnapCandidate(
           continue;
         }
 
-        for (const direction of directions) {
+        for (const direction of getCandidateDirections(dragged, target)) {
           const candidate = candidateForDirection(
             dragged,
             draggedHalf,
@@ -95,6 +95,28 @@ export function applySnap(state: BoardState, candidate: SnapCandidate): BoardSta
 }
 
 const halves: DominoHalf[] = ["a", "b"];
+
+function getCandidateDirections(dragged: Domino, target: Domino): readonly Point[] {
+  if (arePerpendicular(dragged, target)) {
+    return isVertical(target)
+      ? horizontalDirections
+      : verticalDirections;
+  }
+
+  return isVertical(target)
+    ? verticalDirections
+    : horizontalDirections;
+}
+
+const horizontalDirections: Point[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+];
+
+const verticalDirections: Point[] = [
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
 
 function candidateForDirection(
   dragged: Domino,
