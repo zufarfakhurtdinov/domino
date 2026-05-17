@@ -1,5 +1,7 @@
 import {
+  getAxisGap,
   getBoundsOriginFromTransform,
+  getDominoOrientation,
   getDominoBounds,
   getHalfBounds,
   getTransformOrigin,
@@ -126,13 +128,5 @@ function getLinkOrientation(first: Rect, second: Rect): "horizontal" | "vertical
 }
 
 function arePerpendicular(left: Domino, right: Domino): boolean {
-  return isVertical(left) !== isVertical(right);
-}
-
-function isVertical(domino: Domino): boolean {
-  return domino.rotation === 90 || domino.rotation === 270;
-}
-
-function getAxisGap(firstStart: number, firstSize: number, secondStart: number, secondSize: number): number {
-  return Math.max(firstStart, secondStart) - Math.min(firstStart + firstSize, secondStart + secondSize);
+  return getDominoOrientation(left) !== getDominoOrientation(right);
 }

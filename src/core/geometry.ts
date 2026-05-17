@@ -1,5 +1,7 @@
 import type { Domino, DominoHalf, Point, Rect, Rotation } from "./types";
 
+export type Orientation = "horizontal" | "vertical";
+
 export const HALF_WIDTH = 100;
 export const HALF_HEIGHT = 100;
 export const DOMINO_WIDTH = HALF_WIDTH * 2;
@@ -10,8 +12,16 @@ export function rotateClockwise(rotation: Rotation): Rotation {
   return (((rotation + 90) % 360) as Rotation);
 }
 
+export function getRotationOrientation(rotation: Rotation): Orientation {
+  return rotation === 90 || rotation === 270 ? "vertical" : "horizontal";
+}
+
+export function getDominoOrientation(domino: Domino): Orientation {
+  return getRotationOrientation(domino.rotation);
+}
+
 export function getRotationSize(rotation: Rotation): { width: number; height: number } {
-  if (rotation === 90 || rotation === 270) {
+  if (getRotationOrientation(rotation) === "vertical") {
     return { width: HALF_HEIGHT, height: DOMINO_WIDTH };
   }
 
@@ -112,4 +122,8 @@ export function rectanglesOverlap(left: Rect, right: Rect): boolean {
     left.y + left.height <= right.y ||
     right.y + right.height <= left.y
   );
+}
+
+export function getAxisGap(firstStart: number, firstSize: number, secondStart: number, secondSize: number): number {
+  return Math.max(firstStart, secondStart) - Math.min(firstStart + firstSize, secondStart + secondSize);
 }

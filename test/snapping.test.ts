@@ -69,6 +69,27 @@ describe("snap candidate detection", () => {
     });
   });
 
+  it("offers the same perpendicular side-center joint when the other domino is dragged", () => {
+    const state = board([
+      domino({
+        id: "dragged",
+        a: content("cat_img", "image"),
+        x: snapProbeOffset,
+        y: snapProbeOffset,
+        rotation: 90,
+      }),
+      domino({ id: "target", a: content("cat_en"), ...sideCenteredSnap }),
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "dragged",
+      draggedHalf: "a",
+      targetDominoId: "target",
+      targetHalf: "a",
+      snappedPosition: { x: 0, y: 0 },
+    });
+  });
+
   it.each([
     ["above", { x: -HALF_WIDTH / 2, y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset }],
     ["below", { x: -HALF_WIDTH / 2, y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset }],

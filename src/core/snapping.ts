@@ -1,27 +1,21 @@
 import {
+  getAxisGap,
+  getDominoOrientation,
   getDominoBounds,
   getHalfBounds,
-  getHalfLocalBounds,
   getRectCenter,
-  getRotationSize,
   HALF_WIDTH,
   rectanglesOverlap,
   SNAP_GAP,
 } from "./geometry";
 import { getConnectedDominoIds } from "./connections";
 import { canMatch } from "./matching";
+import type { Orientation } from "./geometry";
 import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
 
 export type SnapOptions = {
   threshold: number;
 };
-
-const directions: Point[] = [
-  { x: 1, y: 0 },
-  { x: -1, y: 0 },
-  { x: 0, y: 1 },
-  { x: 0, y: -1 },
-];
 
 export function findSnapCandidate(
   state: BoardState,
@@ -36,37 +30,37 @@ export function findSnapCandidate(
 
   const candidates: SnapCandidate[] = [];
   const threshold = options.threshold * HALF_WIDTH;
+  const occupiedSides = getOccupiedSides(state);
+  const draggedPorts = getPorts(dragged, occupiedSides);
 
   for (const target of state.dominoes) {
     if (target.id === dragged.id) {
       continue;
     }
 
-    for (const draggedHalf of halves) {
-      for (const targetHalf of halves) {
-        if (!canMatch(dragged[draggedHalf], target[targetHalf], pairs)) {
+    const targetPorts = getPorts(target, occupiedSides);
+
+    for (const draggedPort of draggedPorts) {
+      for (const targetPort of targetPorts) {
+        if (!canConnectPorts(dragged, draggedPort, target, targetPort)) {
           continue;
         }
 
-        for (const direction of getCandidateDirections(dragged, target)) {
-          const candidate = candidateForDirection(
-            dragged,
-            draggedHalf,
-            target,
-            targetHalf,
-            direction,
-          );
-
-          if (candidate.distance > threshold) {
-            continue;
-          }
-
-          if (collides(state, dragged, candidate.snappedPosition)) {
-            continue;
-          }
-
-          candidates.push(candidate);
+        if (!canMatch(dragged[draggedPort.half], target[targetPort.half], pairs)) {
+          continue;
         }
+
+        const candidate = candidateForPorts(dragged, draggedPort, target, targetPort);
+
+        if (candidate.distance > threshold) {
+          continue;
+        }
+
+        if (collides(state, dragged, candidate.snappedPosition)) {
+          continue;
+        }
+
+        candidates.push(candidate);
       }
     }
   }
@@ -94,146 +88,217 @@ export function applySnap(state: BoardState, candidate: SnapCandidate): BoardSta
   };
 }
 
-const halves: DominoHalf[] = ["a", "b"];
+type Side = "top" | "right" | "bottom" | "left";
+type PortKind = "end" | "side-center";
 
-function getCandidateDirections(dragged: Domino, target: Domino): readonly Point[] {
-  if (arePerpendicular(dragged, target)) {
-    return isVertical(target)
-      ? horizontalDirections
-      : verticalDirections;
-  }
+type JointPort = {
+  half: DominoHalf;
+  side: Side;
+  kind: PortKind;
+  point: Point;
+  normal: Point;
+};
 
-  return isVertical(target)
-    ? verticalDirections
-    : horizontalDirections;
-}
+const portSidesByOrientation: Record<
+  Orientation,
+  { ends: readonly Side[]; sideCenters: readonly Side[] }
+> = {
+  horizontal: { ends: ["left", "right"], sideCenters: ["top", "bottom"] },
+  vertical: { ends: ["top", "bottom"], sideCenters: ["left", "right"] },
+};
 
-const horizontalDirections: Point[] = [
-  { x: 1, y: 0 },
-  { x: -1, y: 0 },
-];
+const sideNormals: Record<Side, Point> = {
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+  top: { x: 0, y: -1 },
+  bottom: { x: 0, y: 1 },
+};
 
-const verticalDirections: Point[] = [
-  { x: 0, y: 1 },
-  { x: 0, y: -1 },
-];
+const oppositeSides: Record<Side, Side> = {
+  left: "right",
+  right: "left",
+  top: "bottom",
+  bottom: "top",
+};
 
-function candidateForDirection(
+const sideCenters: Record<Side, (rect: Rect, center: Point) => Point> = {
+  left: (rect, center) => ({ x: rect.x, y: center.y }),
+  right: (rect, center) => ({ x: rect.x + rect.width, y: center.y }),
+  top: (rect, center) => ({ x: center.x, y: rect.y }),
+  bottom: (rect, center) => ({ x: center.x, y: rect.y + rect.height }),
+};
+
+const outerHalves: Record<Side, (a: Rect, b: Rect) => DominoHalf> = {
+  left: (a, b) => (a.x <= b.x ? "a" : "b"),
+  right: (a, b) => (a.x + a.width >= b.x + b.width ? "a" : "b"),
+  top: (a, b) => (a.y <= b.y ? "a" : "b"),
+  bottom: (a, b) => (a.y + a.height >= b.y + b.height ? "a" : "b"),
+};
+
+function candidateForPorts(
   dragged: Domino,
-  draggedHalf: DominoHalf,
+  draggedPort: JointPort,
   target: Domino,
-  targetHalf: DominoHalf,
-  direction: Point,
+  targetPort: JointPort,
 ): SnapCandidate {
-  const snappedPosition = arePerpendicular(dragged, target)
-    ? getPerpendicularSnappedPosition(dragged, target, direction)
-    : getHalfSnappedPosition(dragged, draggedHalf, target, targetHalf, direction);
+  const desiredDraggedPort = {
+    x: targetPort.point.x + targetPort.normal.x * SNAP_GAP,
+    y: targetPort.point.y + targetPort.normal.y * SNAP_GAP,
+  };
+  const snappedPosition = roundPoint({
+    x: dragged.x + desiredDraggedPort.x - draggedPort.point.x,
+    y: dragged.y + desiredDraggedPort.y - draggedPort.point.y,
+  });
 
   return {
     draggedDominoId: dragged.id,
-    draggedHalf,
+    draggedHalf: draggedPort.half,
     targetDominoId: target.id,
-    targetHalf,
+    targetHalf: targetPort.half,
     snappedPosition,
     distance: distanceBetween({ x: dragged.x, y: dragged.y }, snappedPosition),
   };
 }
 
-function getHalfSnappedPosition(
-  dragged: Domino,
-  draggedHalf: DominoHalf,
-  target: Domino,
-  targetHalf: DominoHalf,
-  direction: Point,
-): Point {
-  const draggedLocal = getHalfLocalBounds(dragged.rotation, draggedHalf);
-  const targetHalfBounds = getHalfBounds(target, targetHalf);
-  const desiredHalfBounds = getDesiredHalfBounds(draggedLocal, targetHalfBounds, direction);
+function getPorts(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>): JointPort[] {
+  const occupied = occupiedSides.get(domino.id) ?? new Set<Side>();
+  const bounds = getDominoBounds(domino);
+  const sides = portSidesByOrientation[getDominoOrientation(domino)];
 
+  return [
+    ...sides.ends.map((side) => createEndPort(domino, side)),
+    ...sides.sideCenters.flatMap((side) => createSideCenterPorts(domino, side, bounds)),
+  ].filter((port) => !occupied.has(port.side));
+}
+
+function createEndPort(domino: Domino, side: Side): JointPort {
+  const half = getOuterHalf(domino, side);
+  const halfBounds = getHalfBounds(domino, half);
   return {
-    x: desiredHalfBounds.x - draggedLocal.x,
-    y: desiredHalfBounds.y - draggedLocal.y,
+    half,
+    side,
+    kind: "end",
+    point: getSideCenter(halfBounds, side),
+    normal: getSideNormal(side),
   };
 }
 
-function getPerpendicularSnappedPosition(
+function createSideCenterPorts(domino: Domino, side: Side, bounds: Rect): JointPort[] {
+  return (["a", "b"] as const).map((half) => ({
+    half,
+    side,
+    kind: "side-center" as const,
+    point: getSideCenter(bounds, side),
+    normal: getSideNormal(side),
+  }));
+}
+
+function getOuterHalf(domino: Domino, side: Side): DominoHalf {
+  const a = getHalfBounds(domino, "a");
+  const b = getHalfBounds(domino, "b");
+  return outerHalves[side](a, b);
+}
+
+function canConnectPorts(
   dragged: Domino,
+  draggedPort: JointPort,
   target: Domino,
-  direction: Point,
-): Point {
-  const draggedSize = getRotationSize(dragged.rotation);
-  const targetBounds = getDominoBounds(target);
-  const targetCenter = getRectCenter(targetBounds);
-
-  if (direction.x === 1) {
-    return {
-      x: targetBounds.x + targetBounds.width + SNAP_GAP,
-      y: targetCenter.y - draggedSize.height / 2,
-    };
+  targetPort: JointPort,
+): boolean {
+  if (draggedPort.side !== oppositeSide(targetPort.side)) {
+    return false;
   }
 
-  if (direction.x === -1) {
-    return {
-      x: targetBounds.x - SNAP_GAP - draggedSize.width,
-      y: targetCenter.y - draggedSize.height / 2,
-    };
-  }
+  return arePerpendicular(dragged, target)
+    ? isHorizontalEndToVerticalSide(dragged, draggedPort, target, targetPort)
+    : draggedPort.kind === "end" && targetPort.kind === "end";
+}
 
-  if (direction.y === 1) {
-    return {
-      x: targetCenter.x - draggedSize.width / 2,
-      y: targetBounds.y + targetBounds.height + SNAP_GAP,
-    };
-  }
+function isHorizontalEndToVerticalSide(
+  first: Domino,
+  firstPort: JointPort,
+  second: Domino,
+  secondPort: JointPort,
+): boolean {
+  return getDominoOrientation(first) === "vertical"
+    ? firstPort.kind === "side-center" && secondPort.kind === "end"
+    : firstPort.kind === "end" && secondPort.kind === "side-center";
+}
 
+function roundPoint(point: Point): Point {
   return {
-    x: targetCenter.x - draggedSize.width / 2,
-    y: targetBounds.y - SNAP_GAP - draggedSize.height,
+    x: Number(point.x.toFixed(6)),
+    y: Number(point.y.toFixed(6)),
   };
+}
+
+function getSideCenter(rect: Rect, side: Side): Point {
+  return sideCenters[side](rect, getRectCenter(rect));
+}
+
+function getSideNormal(side: Side): Point {
+  return sideNormals[side];
+}
+
+function oppositeSide(side: Side): Side {
+  return oppositeSides[side];
 }
 
 function arePerpendicular(left: Domino, right: Domino): boolean {
-  return isVertical(left) !== isVertical(right);
+  return getDominoOrientation(left) !== getDominoOrientation(right);
 }
 
-function isVertical(domino: Domino): boolean {
-  return domino.rotation === 90 || domino.rotation === 270;
+function getOccupiedSides(state: BoardState): Map<string, Set<Side>> {
+  const occupied = new Map<string, Set<Side>>();
+
+  for (const link of state.links) {
+    const first = state.dominoes.find((domino) => domino.id === link.dominoId1);
+    const second = state.dominoes.find((domino) => domino.id === link.dominoId2);
+    if (!first || !second) {
+      continue;
+    }
+
+    const firstBounds = arePerpendicular(first, second)
+      ? getDominoBounds(first)
+      : getHalfBounds(first, link.half1);
+    const secondBounds = arePerpendicular(first, second)
+      ? getDominoBounds(second)
+      : getHalfBounds(second, link.half2);
+    const sides = getTouchingSides(firstBounds, secondBounds);
+    if (!sides) {
+      continue;
+    }
+
+    addOccupiedSide(occupied, first.id, sides.first);
+    addOccupiedSide(occupied, second.id, sides.second);
+  }
+
+  return occupied;
 }
 
-function getDesiredHalfBounds(draggedLocal: Rect, targetHalfBounds: Rect, direction: Point): Rect {
-  if (direction.x === 1) {
-    return {
-      x: targetHalfBounds.x + targetHalfBounds.width + SNAP_GAP,
-      y: getRectCenter(targetHalfBounds).y - draggedLocal.height / 2,
-      width: draggedLocal.width,
-      height: draggedLocal.height,
-    };
+function getTouchingSides(first: Rect, second: Rect): { first: Side; second: Side } | null {
+  const horizontalGap = getAxisGap(first.x, first.width, second.x, second.width);
+  const verticalGap = getAxisGap(first.y, first.height, second.y, second.height);
+
+  if (horizontalGap > verticalGap) {
+    return first.x <= second.x
+      ? { first: "right", second: "left" }
+      : { first: "left", second: "right" };
   }
 
-  if (direction.x === -1) {
-    return {
-      x: targetHalfBounds.x - SNAP_GAP - draggedLocal.width,
-      y: getRectCenter(targetHalfBounds).y - draggedLocal.height / 2,
-      width: draggedLocal.width,
-      height: draggedLocal.height,
-    };
+  if (verticalGap > horizontalGap) {
+    return first.y <= second.y
+      ? { first: "bottom", second: "top" }
+      : { first: "top", second: "bottom" };
   }
 
-  if (direction.y === 1) {
-    return {
-      x: getRectCenter(targetHalfBounds).x - draggedLocal.width / 2,
-      y: targetHalfBounds.y + targetHalfBounds.height + SNAP_GAP,
-      width: draggedLocal.width,
-      height: draggedLocal.height,
-    };
-  }
+  return null;
+}
 
-  return {
-    x: getRectCenter(targetHalfBounds).x - draggedLocal.width / 2,
-    y: targetHalfBounds.y - SNAP_GAP - draggedLocal.height,
-    width: draggedLocal.width,
-    height: draggedLocal.height,
-  };
+function addOccupiedSide(occupied: Map<string, Set<Side>>, dominoId: string, side: Side): void {
+  const sides = occupied.get(dominoId) ?? new Set<Side>();
+  sides.add(side);
+  occupied.set(dominoId, sides);
 }
 
 function collides(state: BoardState, dragged: Domino, snappedPosition: Point): boolean {
