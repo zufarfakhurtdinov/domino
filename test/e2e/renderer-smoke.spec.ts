@@ -7,12 +7,12 @@ test("renders the default SVG board", async ({ page }) => {
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.dominoes.map((domino) => domino.id)).toEqual([
-    "linked-dragged",
-    "linked-target",
-    "snap-dragged",
-    "snap-target",
-    "rotated-dragged",
-    "rotated-target",
+    "one-two-a",
+    "two-three",
+    "one-two-b",
+    "four-five",
+    "one-five",
+    "three-seven",
   ]);
 });
 
