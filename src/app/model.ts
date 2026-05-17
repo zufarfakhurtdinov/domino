@@ -29,7 +29,7 @@ export function createFixtureBoard(fixture: string | null): BoardState {
         createDomino("one-two-b", word("one_3", "one", 1), word("two_3", "two", 2), 512, BOARD_TOP, 0),
         createDomino("four-five", word("four_4", "four", 4), word("five_4", "five", 5), BOARD_LEFT, 284, 90),
         createDomino("one-five", word("one_5", "one", 1), word("five_5", "five", 5), 232, 284, 0),
-        createDomino("three-seven", word("three_6", "three", 3), word("seven_6", "seven", 7), 512, 284, 90),
+        createDomino("three-seven", word("three_6", "three", 3), word("seven_6", "seven", 7), 640, 284, 90),
       ],
       links: [],
     };

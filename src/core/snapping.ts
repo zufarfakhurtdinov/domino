@@ -31,37 +31,28 @@ export function findSnapCandidate(
   const candidates: SnapCandidate[] = [];
   const threshold = options.threshold * HALF_WIDTH;
   const occupiedSides = getOccupiedSides(state);
-  const draggedPorts = getPorts(dragged, occupiedSides);
 
   for (const target of state.dominoes) {
     if (target.id === dragged.id) {
       continue;
     }
 
-    const targetPorts = getPorts(target, occupiedSides);
-
-    for (const draggedPort of draggedPorts) {
-      for (const targetPort of targetPorts) {
-        if (!canConnectPorts(dragged, draggedPort, target, targetPort)) {
-          continue;
-        }
-
-        if (!canMatch(dragged[draggedPort.half], target[targetPort.half], pairs)) {
-          continue;
-        }
-
-        const candidate = candidateForPorts(dragged, draggedPort, target, targetPort);
-
-        if (candidate.distance > threshold) {
-          continue;
-        }
-
-        if (collides(state, dragged, candidate.snappedPosition)) {
-          continue;
-        }
-
-        candidates.push(candidate);
+    for (const joint of getJointCandidates(dragged, target, occupiedSides)) {
+      if (!canMatch(dragged[joint.dragged.half], target[joint.target.half], pairs)) {
+        continue;
       }
+
+      const candidate = candidateForJoint(dragged, joint, target);
+
+      if (candidate.distance > threshold) {
+        continue;
+      }
+
+      if (collides(state, dragged, candidate.snappedPosition)) {
+        continue;
+      }
+
+      candidates.push(candidate);
     }
   }
 
@@ -89,14 +80,19 @@ export function applySnap(state: BoardState, candidate: SnapCandidate): BoardSta
 }
 
 type Side = "top" | "right" | "bottom" | "left";
-type PortKind = "end" | "side-center";
+type AnchorKind = "end" | "side-center";
 
-type JointPort = {
+type SnapAnchor = {
   half: DominoHalf;
   side: Side;
-  kind: PortKind;
+  kind: AnchorKind;
   point: Point;
   normal: Point;
+};
+
+type SnapJoint = {
+  dragged: SnapAnchor;
+  target: SnapAnchor;
 };
 
 const portSidesByOrientation: Record<
@@ -135,32 +131,51 @@ const outerHalves: Record<Side, (a: Rect, b: Rect) => DominoHalf> = {
   bottom: (a, b) => (a.y + a.height >= b.y + b.height ? "a" : "b"),
 };
 
-function candidateForPorts(
+function candidateForJoint(
   dragged: Domino,
-  draggedPort: JointPort,
+  joint: SnapJoint,
   target: Domino,
-  targetPort: JointPort,
 ): SnapCandidate {
   const desiredDraggedPort = {
-    x: targetPort.point.x + targetPort.normal.x * SNAP_GAP,
-    y: targetPort.point.y + targetPort.normal.y * SNAP_GAP,
+    x: joint.target.point.x + joint.target.normal.x * SNAP_GAP,
+    y: joint.target.point.y + joint.target.normal.y * SNAP_GAP,
   };
   const snappedPosition = roundPoint({
-    x: dragged.x + desiredDraggedPort.x - draggedPort.point.x,
-    y: dragged.y + desiredDraggedPort.y - draggedPort.point.y,
+    x: dragged.x + desiredDraggedPort.x - joint.dragged.point.x,
+    y: dragged.y + desiredDraggedPort.y - joint.dragged.point.y,
   });
 
   return {
     draggedDominoId: dragged.id,
-    draggedHalf: draggedPort.half,
+    draggedHalf: joint.dragged.half,
     targetDominoId: target.id,
-    targetHalf: targetPort.half,
+    targetHalf: joint.target.half,
     snappedPosition,
     distance: distanceBetween({ x: dragged.x, y: dragged.y }, snappedPosition),
   };
 }
 
-function getPorts(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>): JointPort[] {
+function getJointCandidates(
+  dragged: Domino,
+  target: Domino,
+  occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>,
+): SnapJoint[] {
+  const draggedAnchors = getAnchors(dragged, occupiedSides);
+  const targetAnchors = getAnchors(target, occupiedSides);
+  const joints: SnapJoint[] = [];
+
+  for (const draggedAnchor of draggedAnchors) {
+    for (const targetAnchor of targetAnchors) {
+      if (canConnectAnchors(dragged, draggedAnchor, target, targetAnchor)) {
+        joints.push({ dragged: draggedAnchor, target: targetAnchor });
+      }
+    }
+  }
+
+  return joints;
+}
+
+function getAnchors(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>): SnapAnchor[] {
   const occupied = occupiedSides.get(domino.id) ?? new Set<Side>();
   const sides = portSidesByOrientation[getDominoOrientation(domino)];
 
@@ -170,7 +185,7 @@ function getPorts(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet
   ].filter((port) => !occupied.has(port.side));
 }
 
-function createEndPort(domino: Domino, side: Side): JointPort {
+function createEndPort(domino: Domino, side: Side): SnapAnchor {
   const half = getOuterHalf(domino, side);
   const halfBounds = getHalfBounds(domino, half);
   return {
@@ -182,7 +197,7 @@ function createEndPort(domino: Domino, side: Side): JointPort {
   };
 }
 
-function createSideCenterPorts(domino: Domino, side: Side): JointPort[] {
+function createSideCenterPorts(domino: Domino, side: Side): SnapAnchor[] {
   return (["a", "b"] as const).map((half) => {
     const halfBounds = getHalfBounds(domino, half);
     return {
@@ -201,30 +216,30 @@ function getOuterHalf(domino: Domino, side: Side): DominoHalf {
   return outerHalves[side](a, b);
 }
 
-function canConnectPorts(
+function canConnectAnchors(
   dragged: Domino,
-  draggedPort: JointPort,
+  draggedAnchor: SnapAnchor,
   target: Domino,
-  targetPort: JointPort,
+  targetAnchor: SnapAnchor,
 ): boolean {
-  if (draggedPort.side !== oppositeSide(targetPort.side)) {
+  if (draggedAnchor.side !== oppositeSide(targetAnchor.side)) {
     return false;
   }
 
   return arePerpendicular(dragged, target)
-    ? isHorizontalEndToVerticalSide(dragged, draggedPort, target, targetPort)
-    : draggedPort.kind === "end" && targetPort.kind === "end";
+    ? isHorizontalEndToVerticalSide(dragged, draggedAnchor, target, targetAnchor)
+    : draggedAnchor.kind === "end" && targetAnchor.kind === "end";
 }
 
 function isHorizontalEndToVerticalSide(
   first: Domino,
-  firstPort: JointPort,
+  firstAnchor: SnapAnchor,
   second: Domino,
-  secondPort: JointPort,
+  secondAnchor: SnapAnchor,
 ): boolean {
   return getDominoOrientation(first) === "vertical"
-    ? firstPort.kind === "side-center" && secondPort.kind === "end"
-    : firstPort.kind === "end" && secondPort.kind === "side-center";
+    ? firstAnchor.kind === "side-center" && secondAnchor.kind === "end"
+    : firstAnchor.kind === "end" && secondAnchor.kind === "side-center";
 }
 
 function roundPoint(point: Point): Point {
