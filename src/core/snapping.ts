@@ -227,19 +227,12 @@ function canConnectAnchors(
   }
 
   return arePerpendicular(dragged, target)
-    ? isHorizontalEndToVerticalSide(dragged, draggedAnchor, target, targetAnchor)
+    ? isEndToSideCenter(draggedAnchor, targetAnchor)
     : draggedAnchor.kind === "end" && targetAnchor.kind === "end";
 }
 
-function isHorizontalEndToVerticalSide(
-  first: Domino,
-  firstAnchor: SnapAnchor,
-  second: Domino,
-  secondAnchor: SnapAnchor,
-): boolean {
-  return getDominoOrientation(first) === "vertical"
-    ? firstAnchor.kind === "side-center" && secondAnchor.kind === "end"
-    : firstAnchor.kind === "end" && secondAnchor.kind === "side-center";
+function isEndToSideCenter(first: SnapAnchor, second: SnapAnchor): boolean {
+  return first.kind !== second.kind;
 }
 
 function roundPoint(point: Point): Point {
