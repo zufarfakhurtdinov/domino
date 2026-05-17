@@ -110,16 +110,60 @@ describe("snap candidate detection", () => {
     });
   });
 
-  it.each([
-    ["above", { x: -HALF_WIDTH / 2, y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset }],
-    ["below", { x: -HALF_WIDTH / 2, y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset }],
-  ] as const)("does not snap a horizontal domino to a vertical domino from %s", (_side, position) => {
+  it("centers a vertical end snap on a horizontal target half", () => {
+    const snappedPosition = { x: HALF_WIDTH, y: -(DOMINO_WIDTH + SNAP_GAP) };
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...position }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+      domino({
+        id: "dragged",
+        b: content("cat_en"),
+        x: snappedPosition.x + snapProbeOffset,
+        y: snappedPosition.y + snapProbeOffset,
+        rotation: 90,
+      }),
+      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0 }),
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "dragged",
+      draggedHalf: "b",
+      targetDominoId: "target",
+      targetHalf: "b",
+      snappedPosition,
+    });
+  });
+
+  it.each([
+    [
+      "above",
+      domino({
+        id: "dragged",
+        a: content("cat_en"),
+        x: snapProbeOffset,
+        y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset,
+      }),
+      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+      { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) },
+    ],
+    [
+      "below",
+      domino({
+        id: "dragged",
+        a: content("cat_en"),
+        x: snapProbeOffset,
+        y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset,
+      }),
+      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+      { x: 0, y: DOMINO_WIDTH + SNAP_GAP },
+    ],
+  ] as const)("can snap a horizontal domino to a vertical target's %s end", (_side, dragged, target, snappedPosition) => {
+    const state = board([
+      dragged,
+      target,
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.snappedPosition).toEqual(
+      snappedPosition,
+    );
   });
 
   it.each([
