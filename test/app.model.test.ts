@@ -55,4 +55,27 @@ describe("app model fixtures", () => {
       snappedPosition: snapPosition,
     });
   });
+
+  it("lets the demo four-five domino snap to one-five on the five half", () => {
+    const state = createFixtureBoard("demo");
+    const oneFive = state.dominoes.find((domino) => domino.id === "one-five");
+    expect(oneFive).toBeDefined();
+
+    const snapPosition = {
+      x: oneFive!.x + DOMINO_WIDTH + SNAP_GAP,
+      y: oneFive!.y - HALF_WIDTH,
+    };
+    const fourFive = state.dominoes.find((domino) => domino.id === "four-five");
+    expect(fourFive).toBeDefined();
+    fourFive!.x = snapPosition.x + 8;
+    fourFive!.y = snapPosition.y + 8;
+
+    expect(findSnapCandidate(state, "four-five", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "four-five",
+      draggedHalf: "b",
+      targetDominoId: "one-five",
+      targetHalf: "b",
+      snappedPosition: snapPosition,
+    });
+  });
 });
