@@ -11,7 +11,7 @@ const nearSideCenteredSnap = {
 };
 const sideCenteredSnap = {
   x: HALF_HEIGHT + SNAP_GAP,
-  y: HALF_WIDTH / 2,
+  y: 0,
 };
 
 describe("view interaction", () => {

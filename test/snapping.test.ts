@@ -4,7 +4,7 @@ import type { BoardState, Pair } from "../src/core/types";
 import { board, content, domino } from "./core.fixtures";
 
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
-const sideCenteredSnap = { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 };
+const sideCenteredSnap = { x: HALF_HEIGHT + SNAP_GAP, y: 0 };
 const nearSideCenteredSnap = { x: sideCenteredSnap.x - 0.8, y: HALF_WIDTH / 3 };
 const offThresholdSnap = { x: sideCenteredSnap.x + HALF_WIDTH, y: HALF_WIDTH / 3 };
 const snapProbeOffset = 8;
@@ -55,7 +55,7 @@ describe("snap candidate detection", () => {
         id: "dragged",
         a: content("cat_en"),
         x: sideCenteredSnap.x + 4,
-        y: sideCenteredSnap.y + 3,
+        y: snapProbeOffset,
       }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
@@ -90,6 +90,26 @@ describe("snap candidate detection", () => {
     });
   });
 
+  it("snaps a perpendicular match to the matching half side center", () => {
+    const state = board([
+      domino({
+        id: "dragged",
+        b: content("cat_en"),
+        x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
+        y: HALF_WIDTH + snapProbeOffset,
+      }),
+      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "dragged",
+      draggedHalf: "b",
+      targetDominoId: "target",
+      targetHalf: "b",
+      snappedPosition: { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH },
+    });
+  });
+
   it.each([
     ["above", { x: -HALF_WIDTH / 2, y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset }],
     ["below", { x: -HALF_WIDTH / 2, y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset }],
@@ -106,7 +126,7 @@ describe("snap candidate detection", () => {
     [
       "right",
       90,
-      { x: sideCenteredSnap.x + snapProbeOffset, y: sideCenteredSnap.y + snapProbeOffset },
+      { x: sideCenteredSnap.x + snapProbeOffset, y: snapProbeOffset },
       sideCenteredSnap,
     ],
     [
@@ -114,10 +134,10 @@ describe("snap candidate detection", () => {
       90,
       {
         x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        y: sideCenteredSnap.y + snapProbeOffset,
+        y: snapProbeOffset,
         rotation: 180,
       },
-      { x: -(DOMINO_WIDTH + SNAP_GAP), y: sideCenteredSnap.y },
+      { x: -(DOMINO_WIDTH + SNAP_GAP), y: 0 },
     ],
   ] as const)(
     "can snap a horizontal domino to a vertical target's %s side",

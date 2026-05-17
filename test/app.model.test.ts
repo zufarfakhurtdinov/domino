@@ -1,4 +1,6 @@
 import { canMatch } from "../src/core/matching";
+import { DOMINO_WIDTH, HALF_WIDTH, SNAP_GAP } from "../src/core/geometry";
+import { findSnapCandidate } from "../src/core/snapping";
 import { createFixtureBoard, pairs } from "../src/app/model";
 
 describe("app model fixtures", () => {
@@ -29,5 +31,28 @@ describe("app model fixtures", () => {
     expect(canMatch(oneTwo.a, oneFive.a, pairs)).toBe(true);
     expect(canMatch(fourFive.b, oneFive.b, pairs)).toBe(true);
     expect(canMatch(twoThree.b, threeSeven.a, pairs)).toBe(true);
+  });
+
+  it("lets the demo one-five domino snap to four-five on the five half", () => {
+    const state = createFixtureBoard("demo");
+    const fourFive = state.dominoes.find((domino) => domino.id === "four-five");
+    expect(fourFive).toBeDefined();
+
+    const snapPosition = {
+      x: fourFive!.x - DOMINO_WIDTH - SNAP_GAP,
+      y: fourFive!.y + HALF_WIDTH,
+    };
+    const oneFive = state.dominoes.find((domino) => domino.id === "one-five");
+    expect(oneFive).toBeDefined();
+    oneFive!.x = snapPosition.x - 8;
+    oneFive!.y = snapPosition.y + 8;
+
+    expect(findSnapCandidate(state, "one-five", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "one-five",
+      draggedHalf: "b",
+      targetDominoId: "four-five",
+      targetHalf: "b",
+      snappedPosition: snapPosition,
+    });
   });
 });

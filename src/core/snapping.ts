@@ -162,12 +162,11 @@ function candidateForPorts(
 
 function getPorts(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>): JointPort[] {
   const occupied = occupiedSides.get(domino.id) ?? new Set<Side>();
-  const bounds = getDominoBounds(domino);
   const sides = portSidesByOrientation[getDominoOrientation(domino)];
 
   return [
     ...sides.ends.map((side) => createEndPort(domino, side)),
-    ...sides.sideCenters.flatMap((side) => createSideCenterPorts(domino, side, bounds)),
+    ...sides.sideCenters.flatMap((side) => createSideCenterPorts(domino, side)),
   ].filter((port) => !occupied.has(port.side));
 }
 
@@ -183,14 +182,17 @@ function createEndPort(domino: Domino, side: Side): JointPort {
   };
 }
 
-function createSideCenterPorts(domino: Domino, side: Side, bounds: Rect): JointPort[] {
-  return (["a", "b"] as const).map((half) => ({
-    half,
-    side,
-    kind: "side-center" as const,
-    point: getSideCenter(bounds, side),
-    normal: getSideNormal(side),
-  }));
+function createSideCenterPorts(domino: Domino, side: Side): JointPort[] {
+  return (["a", "b"] as const).map((half) => {
+    const halfBounds = getHalfBounds(domino, half);
+    return {
+      half,
+      side,
+      kind: "side-center" as const,
+      point: getSideCenter(halfBounds, side),
+      normal: getSideNormal(side),
+    };
+  });
 }
 
 function getOuterHalf(domino: Domino, side: Side): DominoHalf {

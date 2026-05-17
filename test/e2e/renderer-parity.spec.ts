@@ -41,7 +41,7 @@ for (const mode of modes) {
     expect(target).toBeDefined();
     const snappedPosition = {
       x: target!.x + HALF_HEIGHT + SNAP_GAP,
-      y: target!.y + HALF_WIDTH / 2,
+      y: target!.y,
     };
     await page.evaluate((position) => {
       window.__DOMINO_TEST__.drop("dragged", {

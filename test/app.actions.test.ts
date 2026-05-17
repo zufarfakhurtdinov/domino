@@ -40,11 +40,11 @@ describe("app actions", () => {
     const linkedStart = { x: 0, y: DOMINO_WIDTH + SNAP_GAP };
     const dropPosition = {
       x: HALF_HEIGHT + SNAP_GAP + 4,
-      y: HALF_WIDTH / 2 + 3,
+      y: 3,
     };
     const snappedPosition = {
       x: HALF_HEIGHT + SNAP_GAP,
-      y: HALF_WIDTH / 2,
+      y: 0,
     };
     const previewDelta = {
       x: dropPosition.x - draggedStart.x,
