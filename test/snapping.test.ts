@@ -291,6 +291,18 @@ describe("snap candidate detection", () => {
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
+  it("does not propose a snap to another domino in the dragged group", () => {
+    const state: BoardState = {
+      dominoes: [
+        domino({ id: "dragged", a: content("cat_en"), ...nearSideCenteredSnap }),
+        domino({ id: "linked-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+      ],
+      links: [{ dominoId1: "dragged", half1: "b", dominoId2: "linked-target", half2: "b" }],
+    };
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+  });
+
   it("chooses the closest candidate", () => {
     const state = board([
       domino({ id: "dragged", a: content("cat_en"), x: sideCenteredSnap.x + 7, y: 17 }),

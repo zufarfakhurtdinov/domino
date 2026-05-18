@@ -31,9 +31,10 @@ export function findSnapCandidate(
   const candidates: SnapCandidate[] = [];
   const threshold = options.threshold * HALF_WIDTH;
   const occupiedSides = getOccupiedSides(state);
+  const draggedGroup = new Set(getConnectedDominoIds(state, dragged.id));
 
   for (const target of state.dominoes) {
-    if (target.id === dragged.id) {
+    if (draggedGroup.has(target.id)) {
       continue;
     }
 
