@@ -167,7 +167,7 @@ function getJointCandidates(
   for (const draggedAnchor of draggedAnchors) {
     for (const targetAnchor of targetAnchors) {
       if (canConnectAnchors(dragged, draggedAnchor, target, targetAnchor)) {
-        joints.push({ dragged: draggedAnchor, target: targetAnchor });
+        joints.push(normalizeJoint(dragged, { dragged: draggedAnchor, target: targetAnchor }, target));
       }
     }
   }
@@ -187,27 +187,22 @@ function getAnchors(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlyS
 
 function createEndPort(domino: Domino, side: Side): SnapAnchor {
   const half = getOuterHalf(domino, side);
-  const halfBounds = getHalfBounds(domino, half);
-  return {
-    half,
-    side,
-    kind: "end",
-    point: getSideCenter(halfBounds, side),
-    normal: getSideNormal(side),
-  };
+  return createAnchor(domino, half, side, "end");
 }
 
 function createSideCenterPorts(domino: Domino, side: Side): SnapAnchor[] {
-  return (["a", "b"] as const).map((half) => {
-    const halfBounds = getHalfBounds(domino, half);
-    return {
-      half,
-      side,
-      kind: "side-center" as const,
-      point: getSideCenter(halfBounds, side),
-      normal: getSideNormal(side),
-    };
-  });
+  return (["a", "b"] as const).map((half) => createAnchor(domino, half, side, "side-center"));
+}
+
+function createAnchor(domino: Domino, half: DominoHalf, side: Side, kind: AnchorKind): SnapAnchor {
+  const bounds = kind === "side-center" ? getDominoBounds(domino) : getHalfBounds(domino, half);
+  return {
+    half,
+    side,
+    kind,
+    point: getSideCenter(bounds, side),
+    normal: getSideNormal(side),
+  };
 }
 
 function getOuterHalf(domino: Domino, side: Side): DominoHalf {
@@ -233,6 +228,42 @@ function canConnectAnchors(
 
 function isEndToSideCenter(first: SnapAnchor, second: SnapAnchor): boolean {
   return first.kind !== second.kind;
+}
+
+function normalizeJoint(dragged: Domino, joint: SnapJoint, target: Domino): SnapJoint {
+  if (!arePerpendicular(dragged, target)) {
+    return joint;
+  }
+
+  const draggedIsHorizontal = getDominoOrientation(dragged) === "horizontal";
+  const horizontal = draggedIsHorizontal ? dragged : target;
+  const vertical = draggedIsHorizontal ? target : dragged;
+  const horizontalHalf = draggedIsHorizontal ? joint.dragged.half : joint.target.half;
+  const verticalHalf = draggedIsHorizontal ? joint.target.half : joint.dragged.half;
+  const horizontalSide = getEndSide(horizontal, horizontalHalf);
+  const verticalSide = oppositeSide(horizontalSide);
+  const horizontalAnchor = createAnchor(horizontal, horizontalHalf, horizontalSide, "end");
+  const verticalAnchor = createAnchor(vertical, verticalHalf, verticalSide, "side-center");
+
+  return draggedIsHorizontal
+    ? { dragged: horizontalAnchor, target: verticalAnchor }
+    : { dragged: verticalAnchor, target: horizontalAnchor };
+}
+
+function getEndSide(domino: Domino, half: DominoHalf): Side {
+  const bounds = getHalfBounds(domino, half);
+
+  return getDominoOrientation(domino) === "horizontal"
+    ? getHorizontalEndSide(bounds, getDominoBounds(domino))
+    : getVerticalEndSide(bounds, getDominoBounds(domino));
+}
+
+function getHorizontalEndSide(half: Rect, domino: Rect): Side {
+  return half.x === domino.x ? "left" : "right";
+}
+
+function getVerticalEndSide(half: Rect, domino: Rect): Side {
+  return half.y === domino.y ? "top" : "bottom";
 }
 
 function roundPoint(point: Point): Point {

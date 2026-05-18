@@ -4,7 +4,7 @@ import type { BoardState, Pair } from "../src/core/types";
 import { board, content, domino } from "./core.fixtures";
 
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
-const sideCenteredSnap = { x: HALF_HEIGHT + SNAP_GAP, y: 0 };
+const sideCenteredSnap = { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 };
 const nearSideCenteredSnap = { x: sideCenteredSnap.x - 0.8, y: HALF_WIDTH / 3 };
 const offThresholdSnap = { x: sideCenteredSnap.x + HALF_WIDTH, y: HALF_WIDTH / 3 };
 const snapProbeOffset = 8;
@@ -96,7 +96,7 @@ describe("snap candidate detection", () => {
         id: "dragged",
         b: content("cat_en"),
         x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        y: HALF_WIDTH + snapProbeOffset,
+        y: HALF_WIDTH / 2 + snapProbeOffset,
       }),
       domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
@@ -106,24 +106,24 @@ describe("snap candidate detection", () => {
       draggedHalf: "b",
       targetDominoId: "target",
       targetHalf: "b",
-      snappedPosition: { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH },
+      snappedPosition: { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH / 2 },
     });
   });
 
-  it("centers a vertical end snap on a horizontal target half", () => {
-    const snappedPosition = { x: HALF_WIDTH, y: -(DOMINO_WIDTH + SNAP_GAP) };
+  it("normalizes a vertical end probe to a horizontal side-to-center snap", () => {
+    const snappedPosition = { x: DOMINO_WIDTH + SNAP_GAP, y: -HALF_WIDTH / 2 };
     const state = board([
       domino({
         id: "dragged",
         b: content("cat_en"),
-        x: snappedPosition.x + snapProbeOffset,
-        y: snappedPosition.y + snapProbeOffset,
+        x: HALF_WIDTH + snapProbeOffset,
+        y: -(DOMINO_WIDTH + SNAP_GAP) + snapProbeOffset,
         rotation: 90,
       }),
       domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0 }),
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 2 })).toMatchObject({
       draggedDominoId: "dragged",
       draggedHalf: "b",
       targetDominoId: "target",
@@ -142,7 +142,7 @@ describe("snap candidate detection", () => {
         y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset,
       }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) },
+      { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
     ],
     [
       "below",
@@ -153,15 +153,15 @@ describe("snap candidate detection", () => {
         y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset,
       }),
       domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: 0, y: DOMINO_WIDTH + SNAP_GAP },
+      { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
     ],
-  ] as const)("can snap a horizontal domino to a vertical target's %s end", (_side, dragged, target, snappedPosition) => {
+  ] as const)("normalizes a horizontal %s-end probe to a vertical side-to-center snap", (_side, dragged, target, snappedPosition) => {
     const state = board([
       dragged,
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.snappedPosition).toEqual(
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 2 })?.snappedPosition).toEqual(
       snappedPosition,
     );
   });
@@ -178,10 +178,10 @@ describe("snap candidate detection", () => {
       90,
       {
         x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        y: snapProbeOffset,
+        y: HALF_WIDTH / 2 + snapProbeOffset,
         rotation: 180,
       },
-      { x: -(DOMINO_WIDTH + SNAP_GAP), y: 0 },
+      { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH / 2 },
     ],
   ] as const)(
     "can snap a horizontal domino to a vertical target's %s side",
