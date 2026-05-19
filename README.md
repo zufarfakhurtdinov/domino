@@ -33,24 +33,9 @@ npm run test:e2e
 npx tsc --noEmit
 ```
 
-## Publish Artifact
-
-The checked-in browser artifact for GitHub Pages lives in `docs/`.
-
-GitHub Pages should publish from the repository `docs/` directory.
-
-After any change that affects the web app, rebuild and refresh that directory before pushing:
-
-```bash
-npm run build:docs
-```
-
-This command rebuilds the app and copies the final static output into `docs/`. Treat `docs/` as the checked-in GitHub Pages artifact directory that should stay in sync with the source.
-
 ## Structure
 
 - `src/core/`: testable game logic for geometry, matching, snapping, links, and layout.
 - `src/main.ts`: browser entry that loads the SVG renderer by default, with `?renderer=dom` for the DOM renderer.
 - `src/renderer-svg/` and `src/renderer-dom/`: browser renderers.
-- `docs/`: checked-in GitHub Pages build artifact.
 - `test/`: Vitest unit tests and Playwright browser tests.
