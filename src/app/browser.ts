@@ -6,19 +6,19 @@ import { createBoardView } from "../view/board-view";
 import { derivePreviewResult } from "../view/interaction";
 import { clampBoardScale, DEFAULT_BOARD_METRICS } from "../view/metrics";
 import { getVisualTransform } from "../view/transforms";
-import type { BoardView, ControlState } from "../view/types";
+import type { BoardView } from "../view/types";
 
 type DragSession = {
   dominoId: string;
   offset: Point;
+  pointer: Point;
 };
 
 type RendererCallbacks = {
   onDominoPointerDown: (dominoId: string, pointer: Point) => void;
   onPointerMove: (pointer: Point) => void;
   onPointerUp: () => void;
-  onRotate: (dominoId: string) => void;
-  onRotateControlStateChange: (dominoId: string, state: ControlState) => void;
+  onRotate: (dominoId: string, pivot?: Point) => void;
   onDetach: (link: Link) => void;
 };
 
@@ -45,7 +45,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   let previewState: BoardState | null = null;
   let currentSnapCandidate: SnapCandidate | null = null;
   let dragSession: DragSession | null = null;
-  const rotateControlStates = new Map<string, ControlState>();
 
   const renderer = new RendererClass(appContainer, {
     onDominoPointerDown(dominoId, pointer) {
@@ -57,6 +56,7 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
       const transform = getVisualTransform(domino, DEFAULT_BOARD_METRICS);
       dragSession = {
         dominoId,
+        pointer,
         offset: {
           x: pointer.x - transform.x,
           y: pointer.y - transform.y,
@@ -96,22 +96,21 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
         return;
       }
 
+      const session = dragSession;
       if (previewState) {
-        state = commitPreviewDrop(previewState, dragSession.dominoId, currentSnapCandidate);
+        state = commitPreviewDrop(previewState, session.dominoId, currentSnapCandidate);
+      } else {
+        state = rotateDomino(state, session.dominoId, session.pointer);
       }
 
       dragSession = null;
       resetPreview();
       render();
     },
-    onRotate(dominoId) {
-      rotateControlStates.set(dominoId, "default");
-      state = rotateDomino(state, dominoId);
+    onRotate(dominoId, pivot) {
+      state = rotateDomino(state, dominoId, pivot);
       resetPreview();
       render();
-    },
-    onRotateControlStateChange(dominoId, nextState) {
-      rotateControlStates.set(dominoId, nextState);
     },
     onDetach(link) {
       state = detachDomino(state, link.dominoId1);
@@ -127,10 +126,9 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   window.__DOMINO_TEST__ = {
     getState: () => structuredClone(state),
     getSnapCandidate: () => structuredClone(currentSnapCandidate),
-    getRotateControlState: (dominoId: string) => rotateControlStates.get(dominoId) ?? null,
     getScale: () => boardScale,
-    rotate: (dominoId: string) => {
-      state = rotateDomino(state, dominoId);
+    rotate: (dominoId: string, pivot?: Point) => {
+      state = rotateDomino(state, dominoId, pivot);
       resetPreview();
       render();
     },
@@ -160,7 +158,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
         renderState,
         { width: stageWidth, height: stageHeight, scale: boardScale },
         DEFAULT_BOARD_METRICS,
-        rotateControlStates,
         currentSnapCandidate,
       ),
       stageWidth,

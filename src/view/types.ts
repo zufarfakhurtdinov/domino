@@ -1,6 +1,4 @@
-import type { BoardState, Content, DominoHalf, Link, Point, Rotation, SnapCandidate } from "../core/types";
-
-export type ControlState = "default" | "hover" | "pressed";
+import type { BoardState, Content, DominoHalf, Link, Rotation, SnapCandidate } from "../core/types";
 
 export type BoardMetrics = {
   halfWidth: number;
@@ -30,13 +28,6 @@ export type SnapHighlightView = {
   height: number;
 };
 
-export type RotateControlView = {
-  center: Point;
-  radius: number;
-  fill: string;
-  scale: number;
-};
-
 export type DominoHalfView = {
   half: DominoHalf;
   x: number;
@@ -55,7 +46,6 @@ export type DominoView = {
   width: number;
   height: number;
   halves: [DominoHalfView, DominoHalfView];
-  rotateControl: RotateControlView;
 };
 
 export type LinkControlView = {

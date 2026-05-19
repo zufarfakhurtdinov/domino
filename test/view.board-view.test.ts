@@ -24,7 +24,6 @@ describe("board view", () => {
       state,
       { width: 800, height: 600, scale: 1 },
       DEFAULT_BOARD_METRICS,
-      new Map([["dragged", "hover" as const]]),
       {
         draggedDominoId: "dragged",
         draggedHalf: "a",
@@ -44,10 +43,6 @@ describe("board view", () => {
       rotation: 0,
       width: DOMINO_WIDTH,
       height: DOMINO_HEIGHT,
-      rotateControl: {
-        center: { x: DOMINO_WIDTH, y: 0 },
-        fill: "#2563eb",
-      },
     });
     expect(view.linkControls).toEqual([
       {
@@ -69,7 +64,6 @@ describe("board view", () => {
       board([domino({ id: "dragged", a: content("cat_en") })]),
       { width: 800, height: 600, scale: 1 },
       DEFAULT_BOARD_METRICS,
-      new Map(),
       null,
     );
 

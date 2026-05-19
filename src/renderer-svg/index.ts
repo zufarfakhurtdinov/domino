@@ -1,19 +1,11 @@
 import type { DominoHalf, Link, Point } from "../core/types";
-import {
-  getRotateControlView,
-  ROTATE_ICON_PATH,
-  ROTATE_ICON_STROKE_WIDTH,
-  ROTATE_ICON_TRANSFORM,
-} from "../view/controls";
-import { DEFAULT_BOARD_METRICS } from "../view/metrics";
-import type { BoardView, ControlState } from "../view/types";
+import type { BoardView } from "../view/types";
 
 type SvgRendererCallbacks = {
   onDominoPointerDown: (dominoId: string, pointer: Point) => void;
   onPointerMove: (pointer: Point) => void;
   onPointerUp: () => void;
-  onRotate: (dominoId: string) => void;
-  onRotateControlStateChange: (dominoId: string, state: ControlState) => void;
+  onRotate: (dominoId: string, pivot?: Point) => void;
   onDetach: (link: Link) => void;
 };
 
@@ -68,11 +60,6 @@ export class SvgRenderer {
       group.classList.add("domino");
       group.setAttribute("transform", `translate(${domino.x} ${domino.y}) rotate(${domino.rotation})`);
       group.addEventListener("pointerdown", (event) => {
-        const target = event.target;
-        if (target instanceof Element && target.closest("[data-role='rotate-control']")) {
-          return;
-        }
-
         event.preventDefault();
         this.callbacks.onDominoPointerDown(domino.id, this.getLocalPoint(event));
       });
@@ -100,64 +87,6 @@ export class SvgRenderer {
           }),
         );
       });
-
-      const rotateControl = createSvgElement("g");
-      rotateControl.dataset.role = "rotate-control";
-      rotateControl.dataset.controlDominoId = domino.id;
-      rotateControl.setAttribute(
-        "transform",
-        `translate(${domino.rotateControl.center.x} ${domino.rotateControl.center.y}) scale(${domino.rotateControl.scale})`,
-      );
-      rotateControl.style.cursor = "pointer";
-      rotateControl.addEventListener("pointerenter", () => {
-        applyRotateControlState(rotateControl, "hover");
-        this.callbacks.onRotateControlStateChange(domino.id, "hover");
-      });
-      rotateControl.addEventListener("pointerleave", () => {
-        applyRotateControlState(rotateControl, "default");
-        this.callbacks.onRotateControlStateChange(domino.id, "default");
-      });
-      rotateControl.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        applyRotateControlState(rotateControl, "pressed");
-        this.callbacks.onRotateControlStateChange(domino.id, "pressed");
-      });
-      rotateControl.addEventListener("pointerup", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        applyRotateControlState(rotateControl, "hover");
-        this.callbacks.onRotateControlStateChange(domino.id, "hover");
-      });
-      rotateControl.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.callbacks.onRotate(domino.id);
-      });
-
-      rotateControl.append(
-        createSvgElement("circle", {
-          cx: "0",
-          cy: "0",
-          r: String(domino.rotateControl.radius),
-          fill: domino.rotateControl.fill,
-          stroke: "#ffffff",
-          "stroke-width": "2",
-        }),
-      );
-      rotateControl.append(
-        createSvgElement("path", {
-          d: ROTATE_ICON_PATH,
-          transform: ROTATE_ICON_TRANSFORM,
-          fill: "none",
-          stroke: "#ffffff",
-          "stroke-width": String(ROTATE_ICON_STROKE_WIDTH),
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-          "pointer-events": "none",
-        }),
-      );
-      group.append(rotateControl);
 
       boardGroup.append(group);
     }
@@ -330,18 +259,4 @@ function createText(config: {
   });
   text.textContent = config.text;
   return text;
-}
-
-function applyRotateControlState(control: SVGGElement, state: ControlState): void {
-  const view = getRotateControlView(DEFAULT_BOARD_METRICS, state);
-  control.setAttribute(
-    "transform",
-    `translate(${view.center.x} ${view.center.y}) scale(${view.scale})`,
-  );
-
-  const background = control.querySelector("circle");
-  if (background) {
-    background.setAttribute("r", String(view.radius));
-    background.setAttribute("fill", view.fill);
-  }
 }

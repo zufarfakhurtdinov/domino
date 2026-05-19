@@ -37,6 +37,8 @@ body {
 .domino-card {
   position: absolute;
   transform-origin: top left;
+  cursor: pointer;
+  user-select: none;
 }
 
 .domino-half {
@@ -47,6 +49,8 @@ body {
   color: #111827;
   font-size: 20px;
   text-align: center;
+  cursor: inherit;
+  user-select: none;
 }
 
 .domino-half[data-half="a"] {
@@ -55,25 +59,6 @@ body {
 
 .domino-half[data-half="b"] {
   border-radius: 0 6px 6px 0;
-}
-
-.domino-rotate-control {
-  position: absolute;
-  border: 2px solid #ffffff;
-  border-radius: 999px;
-  padding: 0;
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transform-origin: center;
-}
-
-.domino-rotate-control svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-  overflow: visible;
 }
 
 .snap-highlight {

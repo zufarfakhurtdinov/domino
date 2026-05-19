@@ -1,23 +1,14 @@
 import type { Link, Point } from "../core/types";
-import {
-  ROTATE_ICON_PATH,
-  ROTATE_ICON_STROKE_WIDTH,
-  ROTATE_ICON_TRANSFORM,
-  ROTATE_ICON_VIEW_BOX,
-} from "../view/controls";
-import type { BoardView, ControlState } from "../view/types";
+import type { BoardView } from "../view/types";
 import { getBoardSurfaceTransform, getDominoTransform } from "./styles";
 
 type DomRendererCallbacks = {
   onDominoPointerDown: (dominoId: string, pointer: Point) => void;
   onPointerMove: (pointer: Point) => void;
   onPointerUp: () => void;
-  onRotate: (dominoId: string) => void;
-  onRotateControlStateChange: (dominoId: string, state: ControlState) => void;
+  onRotate: (dominoId: string, pivot?: Point) => void;
   onDetach: (link: Link) => void;
 };
-
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 export class DomRenderer {
   private readonly board: HTMLDivElement;
@@ -64,11 +55,6 @@ export class DomRenderer {
       element.style.height = `${domino.height}px`;
       element.style.transform = getDominoTransform(domino.x, domino.y, domino.rotation);
       element.addEventListener("pointerdown", (event) => {
-        const target = event.target;
-        if (target instanceof Element && target.closest("[data-role='rotate-control']")) {
-          return;
-        }
-
         event.preventDefault();
         this.callbacks.onDominoPointerDown(domino.id, this.getLocalPoint(event));
       });
@@ -85,42 +71,6 @@ export class DomRenderer {
         halfElement.textContent = half.content.value;
         element.append(halfElement);
       });
-
-      const rotateControl = document.createElement("button");
-      rotateControl.type = "button";
-      rotateControl.className = "domino-rotate-control";
-      rotateControl.dataset.role = "rotate-control";
-      rotateControl.dataset.controlDominoId = domino.id;
-      rotateControl.setAttribute("aria-label", `Rotate ${domino.id}`);
-      rotateControl.style.left = `${domino.rotateControl.center.x - domino.rotateControl.radius}px`;
-      rotateControl.style.top = `${domino.rotateControl.center.y - domino.rotateControl.radius}px`;
-      rotateControl.style.width = `${domino.rotateControl.radius * 2}px`;
-      rotateControl.style.height = `${domino.rotateControl.radius * 2}px`;
-      rotateControl.style.background = domino.rotateControl.fill;
-      rotateControl.style.transform = `scale(${domino.rotateControl.scale})`;
-      rotateControl.append(createRotateIcon());
-      rotateControl.addEventListener("pointerenter", () => {
-        this.callbacks.onRotateControlStateChange(domino.id, "hover");
-      });
-      rotateControl.addEventListener("pointerleave", () => {
-        this.callbacks.onRotateControlStateChange(domino.id, "default");
-      });
-      rotateControl.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.callbacks.onRotateControlStateChange(domino.id, "pressed");
-      });
-      rotateControl.addEventListener("pointerup", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.callbacks.onRotateControlStateChange(domino.id, "hover");
-      });
-      rotateControl.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.callbacks.onRotate(domino.id);
-      });
-      element.append(rotateControl);
 
       this.surface.append(element);
     }
@@ -163,24 +113,4 @@ export class DomRenderer {
       y: (event.clientY - bounds.top) / this.scale,
     };
   }
-}
-
-function createRotateIcon(): SVGSVGElement {
-  const icon = document.createElementNS(SVG_NS, "svg");
-  icon.setAttribute("viewBox", ROTATE_ICON_VIEW_BOX);
-  icon.setAttribute("aria-hidden", "true");
-  icon.setAttribute("focusable", "false");
-
-  const path = document.createElementNS(SVG_NS, "path");
-  path.setAttribute("d", ROTATE_ICON_PATH);
-  path.setAttribute("transform", ROTATE_ICON_TRANSFORM);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "currentColor");
-  path.setAttribute("stroke-width", String(ROTATE_ICON_STROKE_WIDTH));
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-  path.setAttribute("pointer-events", "none");
-  icon.append(path);
-
-  return icon;
 }

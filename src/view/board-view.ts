@@ -1,14 +1,12 @@
 import type { BoardState, SnapCandidate } from "../core/types";
 import { getBoardRect } from "./metrics";
-import { getRotateControlView } from "./controls";
 import { getLinkControlView, getSnapHighlightView, getVisualTransform } from "./transforms";
-import type { BoardMetrics, BoardView, BoardViewport, ControlState } from "./types";
+import type { BoardMetrics, BoardView, BoardViewport } from "./types";
 
 export function createBoardView(
   state: BoardState,
   viewport: BoardViewport,
   metrics: BoardMetrics,
-  rotateControlStates: ReadonlyMap<string, ControlState>,
   snapCandidate: SnapCandidate | null,
 ): BoardView {
   return {
@@ -40,10 +38,6 @@ export function createBoardView(
           content: domino.b,
         },
       ],
-      rotateControl: getRotateControlView(
-        metrics,
-        rotateControlStates.get(domino.id) ?? "default",
-      ),
     })),
     linkControls: state.links
       .map((link) => getLinkControlView(state, link, metrics))

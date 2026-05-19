@@ -1,32 +1,44 @@
-import { getDominoBounds, getRotationSize, rotateClockwise } from "./geometry";
-import type { BoardState, Point } from "./types";
+import { getConnectedDominoIds } from "./connections";
+import { getDominoBounds, getRectCenter, getRotationSize, rotateClockwise } from "./geometry";
+import type { BoardState, Domino, Point } from "./types";
 
-export function rotateDomino(state: BoardState, dominoId: string): BoardState {
+export function rotateDomino(
+  state: BoardState,
+  dominoId: string,
+  pivotOverride?: Point,
+): BoardState {
   const current = state.dominoes.find((domino) => domino.id === dominoId);
   if (!current) {
     return state;
   }
 
-  const nextRotation = rotateClockwise(current.rotation);
-  const currentBounds = getDominoBounds(current);
+  const connected = new Set(getConnectedDominoIds(state, dominoId));
+  const pivot = pivotOverride ?? getRectCenter(getDominoBounds(current));
+
+  return {
+    ...state,
+    dominoes: state.dominoes.map((domino) =>
+      connected.has(domino.id)
+        ? rotateAroundPivot(domino, pivot)
+        : domino,
+    ),
+  };
+}
+
+function rotateAroundPivot(domino: Domino, pivot: Point): Domino {
+  const center = getRectCenter(getDominoBounds(domino));
+  const nextRotation = rotateClockwise(domino.rotation);
   const nextSize = getRotationSize(nextRotation);
-  const center = {
-    x: currentBounds.x + currentBounds.width / 2,
-    y: currentBounds.y + currentBounds.height / 2,
+  const nextCenter = {
+    x: pivot.x - (center.y - pivot.y),
+    y: pivot.y + (center.x - pivot.x),
   };
 
   return {
-    ...detachDomino(state, dominoId),
-    dominoes: state.dominoes.map((domino) =>
-      domino.id === dominoId
-        ? {
-            ...domino,
-            x: center.x - nextSize.width / 2,
-            y: center.y - nextSize.height / 2,
-            rotation: nextRotation,
-          }
-        : domino,
-    ),
+    ...domino,
+    x: nextCenter.x - nextSize.width / 2,
+    y: nextCenter.y - nextSize.height / 2,
+    rotation: nextRotation,
   };
 }
 

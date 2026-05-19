@@ -47,15 +47,16 @@ describe("board state", () => {
     expect(detachDomino(state, "a").links).toEqual([unrelated]);
   });
 
-  it("detaches a linked domino when rotating it", () => {
+  it("keeps links when rotating a linked group", () => {
     const state = {
       dominoes: [domino({ id: "a", rotation: 0 }), domino({ id: "b" })],
       links: [{ dominoId1: "a", half1: "b", dominoId2: "b", half2: "a" }],
     } as const;
 
-    const next = rotateDomino(state, "a");
+    const next = rotateDomino(state, "a", { x: 25, y: 75 });
 
     expect(next.dominoes[0].rotation).toBe(90);
-    expect(next.links).toEqual([]);
+    expect(next.dominoes[1].rotation).toBe(90);
+    expect(next.links).toEqual(state.links);
   });
 });
