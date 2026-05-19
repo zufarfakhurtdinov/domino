@@ -10,7 +10,7 @@ Let's assume we have a list of pairs, and each pair is a domino. If it is image 
 
 The idea is to have a table space, and it will have randomized dominoes scattered everywhere. The dominoes can be vertical or horizontal; angled positions are forbidden.
 
-I want to be able to drag-and-drop a domino. If the domino is close to the other pair domino in the proper place, it should be snapped to it. It's better to have some sort of indication whether it is snapped or not. There should be ability to disjoin snapped dominoes.
+I want to be able to drag-and-drop a domino. If a compatible open slot on the dragged domino is close to a compatible open slot on another domino, it should snap into place. It's better to have some sort of indication whether it will snap or not. There should be ability to disjoin linked dominoes.
 
 I also want to have a button to rotate each domino clockwise by 90 degrees.
 
