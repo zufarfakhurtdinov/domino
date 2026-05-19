@@ -40,7 +40,7 @@ describe("app model fixtures", () => {
 
     const snapPosition = {
       x: fourFive!.x - DOMINO_WIDTH - SNAP_GAP,
-      y: fourFive!.y + HALF_WIDTH / 2,
+      y: fourFive!.y + HALF_WIDTH,
     };
     const oneFive = state.dominoes.find((domino) => domino.id === "one-five");
     expect(oneFive).toBeDefined();
@@ -63,7 +63,7 @@ describe("app model fixtures", () => {
 
     const snapPosition = {
       x: oneFive!.x + DOMINO_WIDTH + SNAP_GAP,
-      y: oneFive!.y - HALF_WIDTH / 2,
+      y: oneFive!.y - HALF_WIDTH,
     };
     const fourFive = state.dominoes.find((domino) => domino.id === "four-five");
     expect(fourFive).toBeDefined();

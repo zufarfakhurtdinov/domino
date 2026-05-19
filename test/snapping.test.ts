@@ -1,15 +1,144 @@
 import { findSnapCandidate } from "../src/core/snapping";
-import { DOMINO_WIDTH, HALF_HEIGHT, HALF_WIDTH, SNAP_GAP } from "../src/core/geometry";
-import type { BoardState, Pair } from "../src/core/types";
+import {
+  DOMINO_WIDTH,
+  getDominoBounds,
+  getHalfBounds,
+  getRectCenter,
+  HALF_WIDTH,
+  SNAP_GAP,
+} from "../src/core/geometry";
+import type { BoardState, Domino, DominoHalf, Pair, Point, Rect, Rotation } from "../src/core/types";
 import { board, content, domino } from "./core.fixtures";
 
+type Side = "top" | "right" | "bottom" | "left";
+
+type SlotRef = {
+  half: DominoHalf;
+  side: Side;
+};
+
+type SlotPairCase = {
+  name: string;
+  targetRotation: Rotation;
+  draggedRotation: Rotation;
+  targetSlot: SlotRef;
+  draggedSlot: SlotRef;
+  snappedPosition: Point;
+};
+
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
-const sideCenteredSnap = { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 };
-const nearSideCenteredSnap = { x: sideCenteredSnap.x - 0.8, y: HALF_WIDTH / 3 };
-const offThresholdSnap = { x: sideCenteredSnap.x + HALF_WIDTH, y: HALF_WIDTH / 3 };
-const snapProbeOffset = 8;
+const rotations = [0, 90, 180, 270] as const;
+const sides = ["top", "right", "bottom", "left"] as const;
+const snapProbeOffset = { x: 0.75, y: 0.5 };
 
 describe("snap candidate detection", () => {
+  it.each([
+    [
+      0,
+      [
+        { half: "a", side: "left" },
+        { half: "a", side: "top" },
+        { half: "a", side: "bottom" },
+        { half: "b", side: "right" },
+        { half: "b", side: "top" },
+        { half: "b", side: "bottom" },
+      ],
+    ],
+    [
+      90,
+      [
+        { half: "a", side: "top" },
+        { half: "a", side: "right" },
+        { half: "a", side: "left" },
+        { half: "b", side: "bottom" },
+        { half: "b", side: "right" },
+        { half: "b", side: "left" },
+      ],
+    ],
+    [
+      180,
+      [
+        { half: "a", side: "right" },
+        { half: "a", side: "top" },
+        { half: "a", side: "bottom" },
+        { half: "b", side: "left" },
+        { half: "b", side: "top" },
+        { half: "b", side: "bottom" },
+      ],
+    ],
+    [
+      270,
+      [
+        { half: "a", side: "bottom" },
+        { half: "a", side: "right" },
+        { half: "a", side: "left" },
+        { half: "b", side: "top" },
+        { half: "b", side: "right" },
+        { half: "b", side: "left" },
+      ],
+    ],
+  ] as const)("uses six exposed slots for rotation %s", (rotation, expectedSlots) => {
+    const slots = exposedSlots(domino({ rotation }));
+
+    expect(slots).toHaveLength(6);
+    expect(slots).toEqual(expect.arrayContaining([...expectedSlots]));
+  });
+
+  it.each(slotPairCases())(
+    "snaps $name",
+    ({ targetRotation, draggedRotation, targetSlot, draggedSlot, snappedPosition }) => {
+      const target = matchingTarget(targetRotation, targetSlot.half);
+      const dragged = matchingDragged(draggedRotation, draggedSlot.half, {
+        x: snappedPosition.x + snapProbeOffset.x,
+        y: snappedPosition.y + snapProbeOffset.y,
+      });
+
+      expect(findSnapCandidate(board([dragged, target]), "dragged", pairs, { threshold: 0.25 })).toMatchObject({
+        draggedDominoId: "dragged",
+        draggedHalf: draggedSlot.half,
+        targetDominoId: "target",
+        targetHalf: targetSlot.half,
+        snappedPosition,
+      });
+    },
+  );
+
+  it("does not snap horizontal dominoes through side slots", () => {
+    const target = matchingTarget(0, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
+    const state = board([
+      matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+      target,
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+  });
+
+  it("does not snap vertical dominoes through side slots", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "left" } as const;
+    const draggedSlot = { half: "a", side: "right" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(90, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
+    const state = board([
+      matchingDragged(90, draggedSlot.half, near(snappedPosition)),
+      target,
+    ]);
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+  });
+
   it("returns null when there are no other dominoes", () => {
     const state = board([domino({ id: "dragged", a: content("cat_en") })]);
 
@@ -17,285 +146,166 @@ describe("snap candidate detection", () => {
   });
 
   it("returns null when nearby halves do not match", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      domino({ id: "dragged", a: content("dog_en") }),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...sideCenteredSnap }),
-      domino({ id: "target", a: content("dog_img", "image"), x: 0, y: 0, rotation: 90 }),
+      domino({ id: "dragged", a: content("dog_en"), ...near(snappedPosition) }),
+      target,
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
   it("returns null when a valid match is outside the magnet threshold", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...offThresholdSnap }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
-  });
-
-  it("returns a candidate for a valid nearby match", () => {
-    const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...nearSideCenteredSnap }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
-      draggedDominoId: "dragged",
-      draggedHalf: "a",
-      targetDominoId: "target",
-      targetHalf: "a",
-      snappedPosition: sideCenteredSnap,
-    });
-  });
-
-  it("centers a perpendicular snap on the target domino side", () => {
-    const state = board([
-      domino({
-        id: "dragged",
-        a: content("cat_en"),
-        x: sideCenteredSnap.x + 4,
-        y: snapProbeOffset,
+      matchingDragged(0, draggedSlot.half, {
+        x: snappedPosition.x + HALF_WIDTH * 4,
+        y: snappedPosition.y + HALF_WIDTH * 4,
       }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
-      draggedDominoId: "dragged",
-      draggedHalf: "a",
-      targetDominoId: "target",
-      targetHalf: "a",
-      snappedPosition: sideCenteredSnap,
-    });
-  });
-
-  it("offers the same perpendicular side-center joint when the other domino is dragged", () => {
-    const state = board([
-      domino({
-        id: "dragged",
-        a: content("cat_img", "image"),
-        x: snapProbeOffset,
-        y: snapProbeOffset,
-        rotation: 90,
-      }),
-      domino({ id: "target", a: content("cat_en"), ...sideCenteredSnap }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
-      draggedDominoId: "dragged",
-      draggedHalf: "a",
-      targetDominoId: "target",
-      targetHalf: "a",
-      snappedPosition: { x: 0, y: 0 },
-    });
-  });
-
-  it("snaps a perpendicular match to the matching half side center", () => {
-    const state = board([
-      domino({
-        id: "dragged",
-        b: content("cat_en"),
-        x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        y: HALF_WIDTH / 2 + snapProbeOffset,
-      }),
-      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
-      draggedDominoId: "dragged",
-      draggedHalf: "b",
-      targetDominoId: "target",
-      targetHalf: "b",
-      snappedPosition: { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH / 2 },
-    });
-  });
-
-  it("normalizes a vertical end probe to a horizontal side-to-center snap", () => {
-    const snappedPosition = { x: DOMINO_WIDTH + SNAP_GAP, y: -HALF_WIDTH / 2 };
-    const state = board([
-      domino({
-        id: "dragged",
-        b: content("cat_en"),
-        x: HALF_WIDTH + snapProbeOffset,
-        y: -(DOMINO_WIDTH + SNAP_GAP) + snapProbeOffset,
-        rotation: 90,
-      }),
-      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0 }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 2 })).toMatchObject({
-      draggedDominoId: "dragged",
-      draggedHalf: "b",
-      targetDominoId: "target",
-      targetHalf: "b",
-      snappedPosition,
-    });
-  });
-
-  it.each([
-    [
-      "above",
-      domino({
-        id: "dragged",
-        a: content("cat_en"),
-        x: snapProbeOffset,
-        y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset,
-      }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
-    ],
-    [
-      "below",
-      domino({
-        id: "dragged",
-        a: content("cat_en"),
-        x: snapProbeOffset,
-        y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset,
-      }),
-      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: HALF_HEIGHT + SNAP_GAP, y: HALF_WIDTH / 2 },
-    ],
-  ] as const)("normalizes a horizontal %s-end probe to a vertical side-to-center snap", (_side, dragged, target, snappedPosition) => {
-    const state = board([
-      dragged,
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 2 })?.snappedPosition).toEqual(
-      snappedPosition,
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+  });
+
+  it("does not offer another slot on a half that already has a link", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
     );
-  });
-
-  it.each([
-    [
-      "right",
-      90,
-      { x: sideCenteredSnap.x + snapProbeOffset, y: snapProbeOffset },
-      sideCenteredSnap,
-    ],
-    [
-      "left",
-      90,
-      {
-        x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        y: HALF_WIDTH / 2 + snapProbeOffset,
-        rotation: 180,
-      },
-      { x: -(DOMINO_WIDTH + SNAP_GAP), y: HALF_WIDTH / 2 },
-    ],
-  ] as const)(
-    "can snap a horizontal domino to a vertical target's %s side",
-    (_side, targetRotation, draggedPosition, snappedPosition) => {
-    const state = board([
-      domino({
-        id: "dragged",
-        a: content("cat_en"),
-        x: draggedPosition.x,
-        y: draggedPosition.y,
-        rotation: "rotation" in draggedPosition ? draggedPosition.rotation : 0,
-      }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: targetRotation }),
-    ]);
-
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.snappedPosition).toEqual(
-      snappedPosition,
-    );
-    },
-  );
-
-  it.each([
-    [
-      "right",
-      domino({ id: "dragged", a: content("cat_en"), x: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset }),
-      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0 }),
-      { x: DOMINO_WIDTH + SNAP_GAP, y: 0 },
-    ],
-    [
-      "left",
-      domino({
-        id: "dragged",
-        b: content("cat_en"),
-        x: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-      }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
-      { x: -(DOMINO_WIDTH + SNAP_GAP), y: 0 },
-    ],
-  ] as const)("can snap horizontal dominoes %s with the matching pair in the middle", (_side, dragged, target, snappedPosition) => {
-    expect(
-      findSnapCandidate(board([dragged, target]), "dragged", pairs, { threshold: 0.5 })?.snappedPosition,
-    ).toEqual(snappedPosition);
-  });
-
-  it.each([
-    [
-      "below",
-      domino({
-        id: "dragged",
-        a: content("cat_en"),
-        x: 0,
-        y: DOMINO_WIDTH + SNAP_GAP + snapProbeOffset,
-        rotation: 90,
-      }),
-      domino({ id: "target", b: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: 0, y: DOMINO_WIDTH + SNAP_GAP },
-    ],
-    [
-      "above",
-      domino({
-        id: "dragged",
-        b: content("cat_en"),
-        x: 0,
-        y: -(DOMINO_WIDTH + SNAP_GAP) - snapProbeOffset,
-        rotation: 90,
-      }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      { x: 0, y: -(DOMINO_WIDTH + SNAP_GAP) },
-    ],
-  ] as const)("can snap vertical dominoes %s with the matching pair in the middle", (_side, dragged, target, snappedPosition) => {
-    expect(
-      findSnapCandidate(board([dragged, target]), "dragged", pairs, { threshold: 0.5 })?.snappedPosition,
-    ).toEqual(snappedPosition);
-  });
-
-  it.each([
-    ["above", { x: 0, y: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset }],
-    ["below", { x: 0, y: HALF_HEIGHT + SNAP_GAP + snapProbeOffset }],
-  ] as const)("does not snap horizontal dominoes %s each other", (_side, position) => {
-    const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...position }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0 }),
-    ]);
+    const state: BoardState = {
+      dominoes: [
+        matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+        target,
+        domino({
+          id: "linked-to-target-a",
+          a: content("dog_en"),
+          b: content("dog_en"),
+          x: -(DOMINO_WIDTH + SNAP_GAP),
+          y: 0,
+        }),
+      ],
+      links: [{ dominoId1: "target", half1: "a", dominoId2: "linked-to-target-a", half2: "b" }],
+    };
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
-  it.each([
-    ["right", { x: HALF_HEIGHT + SNAP_GAP + snapProbeOffset, y: 0 }],
-    ["left", { x: -(HALF_HEIGHT + SNAP_GAP) - snapProbeOffset, y: 0 }],
-  ] as const)("does not snap vertical dominoes to the %s of each other", (_side, position) => {
-    const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...position, rotation: 90 }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-    ]);
+  it("still offers a slot on the other half when one half already has a link", () => {
+    const targetSlot = { half: "b", side: "bottom" } as const;
+    const draggedSlot = { half: "b", side: "top" } as const;
+    const target = matchingTarget(90, targetSlot.half);
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
+    const state: BoardState = {
+      dominoes: [
+        matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+        target,
+        domino({
+          id: "linked-to-target-a",
+          a: content("dog_en"),
+          b: content("dog_en"),
+          x: -(DOMINO_WIDTH + SNAP_GAP),
+          y: 0,
+        }),
+      ],
+      links: [{ dominoId1: "target", half1: "a", dominoId2: "linked-to-target-a", half2: "b" }],
+    };
+
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+      draggedHalf: "b",
+      targetHalf: "b",
+      snappedPosition,
+    });
+  });
+
+  it("does not offer another slot from a dragged half that already has a link", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
+    const dragged = matchingDragged(0, draggedSlot.half, near(snappedPosition));
+    const state: BoardState = {
+      dominoes: [
+        dragged,
+        target,
+        domino({
+          id: "linked-to-dragged-a",
+          a: content("dog_en"),
+          b: content("dog_en"),
+          x: dragged.x - (DOMINO_WIDTH + SNAP_GAP),
+          y: dragged.y,
+        }),
+      ],
+      links: [{ dominoId1: "dragged", half1: "a", dominoId2: "linked-to-dragged-a", half2: "b" }],
+    };
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
   it("rejects a snap placement that would collide with another domino", () => {
+    const target = matchingTarget(90, "a");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), b: content("free"), ...nearSideCenteredSnap }),
-      domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      domino({ id: "blocker", x: sideCenteredSnap.x + HALF_WIDTH - 16, y: nearSideCenteredSnap.y }),
+      matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+      target,
+      domino({ id: "blocker", x: snappedPosition.x, y: snappedPosition.y }),
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
   it("does not propose a snap to another domino in the dragged group", () => {
+    const target = matchingTarget(90, "a", "linked-target");
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
     const state: BoardState = {
       dominoes: [
-        domino({ id: "dragged", a: content("cat_en"), ...nearSideCenteredSnap }),
-        domino({ id: "linked-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+        matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+        target,
       ],
       links: [{ dominoId1: "dragged", half1: "b", dominoId2: "linked-target", half2: "b" }],
     };
@@ -304,10 +314,20 @@ describe("snap candidate detection", () => {
   });
 
   it("chooses the closest candidate", () => {
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const nearTarget = matchingTarget(90, targetSlot.half, "target-near", { x: SNAP_GAP + 10, y: 0 });
+    const farTarget = matchingTarget(90, targetSlot.half, "target-far");
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      nearTarget,
+      targetSlot,
+    );
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), x: sideCenteredSnap.x + 7, y: 17 }),
-      domino({ id: "target-far", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-      domino({ id: "target-near", a: content("cat_img", "image"), x: SNAP_GAP + 10, y: 0, rotation: 90 }),
+      matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+      farTarget,
+      nearTarget,
     ]);
 
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
@@ -316,17 +336,211 @@ describe("snap candidate detection", () => {
   });
 
   it("breaks exact ties deterministically by target id, target half, then dragged half", () => {
+    const targetSlot = { half: "a", side: "top" } as const;
+    const draggedSlot = { half: "a", side: "bottom" } as const;
+    const target = matchingTarget(90, targetSlot.half, "a-target");
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      targetSlot,
+    );
     const state: BoardState = {
       dominoes: [
-        domino({ id: "dragged", a: content("cat_en"), b: content("cat_en"), ...nearSideCenteredSnap }),
-        domino({ id: "b-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
-        domino({ id: "a-target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
+        matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+        matchingTarget(90, targetSlot.half, "b-target"),
+        target,
       ],
       links: [],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 2 })?.targetDominoId).toBe(
+    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
       "a-target",
     );
   });
 });
+
+function slotPairCases(): SlotPairCase[] {
+  return rotations.flatMap((targetRotation) => {
+    const target = matchingTarget(targetRotation, "a");
+
+    return exposedSlots(target).flatMap((targetSlot) =>
+      rotations.flatMap((draggedRotation) => {
+        if (
+          getOrientation(targetRotation) === getOrientation(draggedRotation) &&
+          !isLongAxisSide(targetRotation, targetSlot.side)
+        ) {
+          return [];
+        }
+
+        const dragged = matchingDragged(draggedRotation, targetSlot.half);
+        const draggedSlot = chooseDraggedSlot(dragged, oppositeSide(targetSlot.side), targetSlot.half);
+        const snappedPosition = snapPositionForSlots(dragged, draggedSlot, target, targetSlot);
+
+        return {
+          name: `target ${targetRotation} ${targetSlot.half}.${targetSlot.side} from dragged ${draggedRotation} ${draggedSlot.half}.${draggedSlot.side}`,
+          targetRotation,
+          draggedRotation,
+          targetSlot,
+          draggedSlot,
+          snappedPosition,
+        };
+      }),
+    );
+  });
+}
+
+function getOrientation(rotation: Rotation): "horizontal" | "vertical" {
+  return rotation === 90 || rotation === 270 ? "vertical" : "horizontal";
+}
+
+function isLongAxisSide(rotation: Rotation, side: Side): boolean {
+  return getOrientation(rotation) === "horizontal"
+    ? side === "left" || side === "right"
+    : side === "top" || side === "bottom";
+}
+
+function matchingTarget(
+  rotation: Rotation,
+  matchingHalf: DominoHalf,
+  id = "target",
+  position: Partial<Pick<Domino, "x" | "y">> = {},
+): Domino {
+  return domino({
+    id,
+    rotation,
+    a: content(matchingHalf === "a" ? "cat_img" : "dog_img", "image"),
+    b: content(matchingHalf === "b" ? "cat_img" : "dog_img", "image"),
+    ...position,
+  });
+}
+
+function matchingDragged(
+  rotation: Rotation,
+  matchingHalf: DominoHalf,
+  position: Partial<Pick<Domino, "x" | "y">> = {},
+): Domino {
+  return domino({
+    id: "dragged",
+    rotation,
+    a: content(matchingHalf === "a" ? "cat_en" : "dog_en"),
+    b: content(matchingHalf === "b" ? "cat_en" : "dog_en"),
+    ...position,
+  });
+}
+
+function exposedSlots(candidate: Domino): SlotRef[] {
+  return (["a", "b"] as const).flatMap((half) => {
+    const dominoBounds = getDominoBounds(candidate);
+    const halfBounds = getHalfBounds(candidate, half);
+
+    return sides
+      .filter((side) => isExposedSide(halfBounds, dominoBounds, side))
+      .map((side) => ({ half, side }));
+  });
+}
+
+function isExposedSide(half: Rect, dominoBounds: Rect, side: Side): boolean {
+  if (side === "left") {
+    return half.x === dominoBounds.x;
+  }
+
+  if (side === "right") {
+    return half.x + half.width === dominoBounds.x + dominoBounds.width;
+  }
+
+  if (side === "top") {
+    return half.y === dominoBounds.y;
+  }
+
+  return half.y + half.height === dominoBounds.y + dominoBounds.height;
+}
+
+function chooseDraggedSlot(dragged: Domino, side: Side, preferredHalf: DominoHalf): SlotRef {
+  const slots = exposedSlots(dragged).filter((slot) => slot.side === side);
+  return slots.find((slot) => slot.half === preferredHalf) ?? slots[0];
+}
+
+function snapPositionForSlots(
+  dragged: Domino,
+  draggedSlot: SlotRef,
+  target: Domino,
+  targetSlot: SlotRef,
+): Point {
+  const draggedPoint = slotPoint(dragged, draggedSlot);
+  const targetPoint = slotPoint(target, targetSlot);
+  const normal = sideNormal(targetSlot.side);
+
+  return roundPoint({
+    x: dragged.x + targetPoint.x + normal.x * SNAP_GAP - draggedPoint.x,
+    y: dragged.y + targetPoint.y + normal.y * SNAP_GAP - draggedPoint.y,
+  });
+}
+
+function slotPoint(candidate: Domino, slot: SlotRef): Point {
+  return getSideCenter(getHalfBounds(candidate, slot.half), slot.side);
+}
+
+function getSideCenter(rect: Rect, side: Side): Point {
+  const center = getRectCenter(rect);
+
+  if (side === "left") {
+    return { x: rect.x, y: center.y };
+  }
+
+  if (side === "right") {
+    return { x: rect.x + rect.width, y: center.y };
+  }
+
+  if (side === "top") {
+    return { x: center.x, y: rect.y };
+  }
+
+  return { x: center.x, y: rect.y + rect.height };
+}
+
+function sideNormal(side: Side): Point {
+  if (side === "left") {
+    return { x: -1, y: 0 };
+  }
+
+  if (side === "right") {
+    return { x: 1, y: 0 };
+  }
+
+  if (side === "top") {
+    return { x: 0, y: -1 };
+  }
+
+  return { x: 0, y: 1 };
+}
+
+function oppositeSide(side: Side): Side {
+  if (side === "left") {
+    return "right";
+  }
+
+  if (side === "right") {
+    return "left";
+  }
+
+  if (side === "top") {
+    return "bottom";
+  }
+
+  return "top";
+}
+
+function near(position: Point): Point {
+  return {
+    x: position.x + snapProbeOffset.x,
+    y: position.y + snapProbeOffset.y,
+  };
+}
+
+function roundPoint(point: Point): Point {
+  return {
+    x: Number(point.x.toFixed(6)),
+    y: Number(point.y.toFixed(6)),
+  };
+}

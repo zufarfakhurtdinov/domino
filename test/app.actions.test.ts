@@ -39,12 +39,12 @@ describe("app actions", () => {
     const draggedStart = { x: HALF_WIDTH, y: SNAP_GAP };
     const linkedStart = { x: 0, y: DOMINO_WIDTH + SNAP_GAP };
     const dropPosition = {
-      x: HALF_HEIGHT + SNAP_GAP + 4,
-      y: HALF_WIDTH / 2 + 3,
+      x: -(DOMINO_WIDTH + SNAP_GAP) + 4,
+      y: 3,
     };
     const snappedPosition = {
-      x: HALF_HEIGHT + SNAP_GAP,
-      y: HALF_WIDTH / 2,
+      x: -(DOMINO_WIDTH + SNAP_GAP),
+      y: 0,
     };
     const previewDelta = {
       x: dropPosition.x - draggedStart.x,
@@ -56,7 +56,7 @@ describe("app actions", () => {
     };
     const state: BoardState = {
       dominoes: [
-        domino({ id: "dragged", a: content("cat_en"), ...draggedStart }),
+        domino({ id: "dragged", b: content("cat_en"), ...draggedStart }),
         domino({ id: "linked", ...linkedStart, rotation: 90 }),
         domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
       ],
@@ -72,7 +72,7 @@ describe("app actions", () => {
     );
 
     expect(next.dominoes).toEqual([
-      domino({ id: "dragged", a: content("cat_en"), ...snappedPosition }),
+      domino({ id: "dragged", b: content("cat_en"), ...snappedPosition }),
       domino({
         id: "linked",
         x: linkedStart.x + previewDelta.x + snapDelta.x,
@@ -83,7 +83,7 @@ describe("app actions", () => {
     ]);
     expect(next.links).toContainEqual({
       dominoId1: "dragged",
-      half1: "a",
+      half1: "b",
       dominoId2: "target",
       half2: "a",
     });

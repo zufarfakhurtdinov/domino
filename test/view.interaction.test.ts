@@ -5,46 +5,46 @@ import { derivePreviewResult } from "../src/view/interaction";
 import { board, content, domino } from "./core.fixtures";
 
 const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
-const nearSideCenteredSnap = {
+const nearSlotSnap = {
   x: HALF_HEIGHT + SNAP_GAP - 0.8,
-  y: HALF_WIDTH / 3,
+  y: 0.6,
 };
-const sideCenteredSnap = {
+const slotSnap = {
   x: HALF_HEIGHT + SNAP_GAP,
-  y: HALF_WIDTH / 2,
+  y: 0,
 };
 
 describe("view interaction", () => {
   it("derives a preview state and snap candidate from the visual drag state", () => {
     const state = board([
-      domino({ id: "dragged", a: content("cat_en"), ...nearSideCenteredSnap }),
+      domino({ id: "dragged", a: content("cat_en"), ...nearSlotSnap }),
       domino({ id: "target", a: content("cat_img", "image"), x: 0, y: 0, rotation: 90 }),
     ]);
 
     const result = derivePreviewResult(
       state,
       "dragged",
-      { ...nearSideCenteredSnap, rotation: 0 },
+      { ...nearSlotSnap, rotation: 0 },
       pairs,
       0.5,
       DEFAULT_BOARD_METRICS,
     );
 
     expect(result.previewState.dominoes.find((entry) => entry.id === "dragged")?.x).toBe(
-      nearSideCenteredSnap.x,
+      nearSlotSnap.x,
     );
     expect(result.previewState.dominoes.find((entry) => entry.id === "dragged")?.y).toBe(
-      nearSideCenteredSnap.y,
+      nearSlotSnap.y,
     );
     expect(result.candidate).toMatchObject({
       draggedDominoId: "dragged",
       draggedHalf: "a",
       targetDominoId: "target",
       targetHalf: "a",
-      snappedPosition: sideCenteredSnap,
+      snappedPosition: slotSnap,
     });
     expect(result.candidate?.distance).toBeCloseTo(
-      Math.hypot(nearSideCenteredSnap.x - sideCenteredSnap.x, nearSideCenteredSnap.y - sideCenteredSnap.y),
+      Math.hypot(nearSlotSnap.x - slotSnap.x, nearSlotSnap.y - slotSnap.y),
       3,
     );
   });

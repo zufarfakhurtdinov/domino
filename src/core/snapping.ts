@@ -1,6 +1,4 @@
 import {
-  getAxisGap,
-  getDominoOrientation,
   getDominoBounds,
   getHalfBounds,
   getRectCenter,
@@ -10,7 +8,6 @@ import {
 } from "./geometry";
 import { getConnectedDominoIds } from "./connections";
 import { canMatch } from "./matching";
-import type { Orientation } from "./geometry";
 import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
 
 export type SnapOptions = {
@@ -30,7 +27,7 @@ export function findSnapCandidate(
 
   const candidates: SnapCandidate[] = [];
   const threshold = options.threshold * HALF_WIDTH;
-  const occupiedSides = getOccupiedSides(state);
+  const occupiedHalves = getOccupiedHalves(state);
   const draggedGroup = new Set(getConnectedDominoIds(state, dragged.id));
 
   for (const target of state.dominoes) {
@@ -38,7 +35,7 @@ export function findSnapCandidate(
       continue;
     }
 
-    for (const joint of getJointCandidates(dragged, target, occupiedSides)) {
+    for (const joint of getJointCandidates(dragged, target, occupiedHalves)) {
       if (!canMatch(dragged[joint.dragged.half], target[joint.target.half], pairs)) {
         continue;
       }
@@ -81,28 +78,21 @@ export function applySnap(state: BoardState, candidate: SnapCandidate): BoardSta
 }
 
 type Side = "top" | "right" | "bottom" | "left";
-type AnchorKind = "end" | "side-center";
 
-type SnapAnchor = {
+type Slot = {
   half: DominoHalf;
   side: Side;
-  kind: AnchorKind;
   point: Point;
   normal: Point;
 };
 
 type SnapJoint = {
-  dragged: SnapAnchor;
-  target: SnapAnchor;
+  dragged: Slot;
+  target: Slot;
 };
 
-const portSidesByOrientation: Record<
-  Orientation,
-  { ends: readonly Side[]; sideCenters: readonly Side[] }
-> = {
-  horizontal: { ends: ["left", "right"], sideCenters: ["top", "bottom"] },
-  vertical: { ends: ["top", "bottom"], sideCenters: ["left", "right"] },
-};
+const halves = ["a", "b"] as const;
+const sides = ["top", "right", "bottom", "left"] as const;
 
 const sideNormals: Record<Side, Point> = {
   left: { x: -1, y: 0 },
@@ -123,13 +113,6 @@ const sideCenters: Record<Side, (rect: Rect, center: Point) => Point> = {
   right: (rect, center) => ({ x: rect.x + rect.width, y: center.y }),
   top: (rect, center) => ({ x: center.x, y: rect.y }),
   bottom: (rect, center) => ({ x: center.x, y: rect.y + rect.height }),
-};
-
-const outerHalves: Record<Side, (a: Rect, b: Rect) => DominoHalf> = {
-  left: (a, b) => (a.x <= b.x ? "a" : "b"),
-  right: (a, b) => (a.x + a.width >= b.x + b.width ? "a" : "b"),
-  top: (a, b) => (a.y <= b.y ? "a" : "b"),
-  bottom: (a, b) => (a.y + a.height >= b.y + b.height ? "a" : "b"),
 };
 
 function candidateForJoint(
@@ -159,16 +142,16 @@ function candidateForJoint(
 function getJointCandidates(
   dragged: Domino,
   target: Domino,
-  occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>,
+  occupiedHalves: ReadonlyMap<string, ReadonlySet<DominoHalf>>,
 ): SnapJoint[] {
-  const draggedAnchors = getAnchors(dragged, occupiedSides);
-  const targetAnchors = getAnchors(target, occupiedSides);
+  const draggedSlots = getSlots(dragged, occupiedHalves);
+  const targetSlots = getSlots(target, occupiedHalves);
   const joints: SnapJoint[] = [];
 
-  for (const draggedAnchor of draggedAnchors) {
-    for (const targetAnchor of targetAnchors) {
-      if (canConnectAnchors(dragged, draggedAnchor, target, targetAnchor)) {
-        joints.push(normalizeJoint(dragged, { dragged: draggedAnchor, target: targetAnchor }, target));
+  for (const draggedSlot of draggedSlots) {
+    for (const targetSlot of targetSlots) {
+      if (canConnectSlots(dragged, draggedSlot, target, targetSlot)) {
+        joints.push({ dragged: draggedSlot, target: targetSlot });
       }
     }
   }
@@ -176,95 +159,69 @@ function getJointCandidates(
   return joints;
 }
 
-function getAnchors(domino: Domino, occupiedSides: ReadonlyMap<string, ReadonlySet<Side>>): SnapAnchor[] {
-  const occupied = occupiedSides.get(domino.id) ?? new Set<Side>();
-  const sides = portSidesByOrientation[getDominoOrientation(domino)];
+function getSlots(domino: Domino, occupiedHalves: ReadonlyMap<string, ReadonlySet<DominoHalf>>): Slot[] {
+  const occupied = occupiedHalves.get(domino.id) ?? new Set<DominoHalf>();
+  const dominoBounds = getDominoBounds(domino);
 
-  return [
-    ...sides.ends.map((side) => createEndPort(domino, side)),
-    ...sides.sideCenters.flatMap((side) => createSideCenterPorts(domino, side)),
-  ].filter((port) => !occupied.has(port.side));
+  return halves.flatMap((half) => {
+    if (occupied.has(half)) {
+      return [];
+    }
+
+    const halfBounds = getHalfBounds(domino, half);
+
+    return sides
+      .filter((side) => isExposedSide(halfBounds, dominoBounds, side))
+      .map((side) => ({
+        half,
+        side,
+        point: getSideCenter(halfBounds, side),
+        normal: getSideNormal(side),
+      }));
+  });
 }
 
-function createEndPort(domino: Domino, side: Side): SnapAnchor {
-  const half = getOuterHalf(domino, side);
-  return createAnchor(domino, half, side, "end");
+function isExposedSide(half: Rect, domino: Rect, side: Side): boolean {
+  if (side === "left") {
+    return half.x === domino.x;
+  }
+
+  if (side === "right") {
+    return half.x + half.width === domino.x + domino.width;
+  }
+
+  if (side === "top") {
+    return half.y === domino.y;
+  }
+
+  return half.y + half.height === domino.y + domino.height;
 }
 
-function createSideCenterPorts(domino: Domino, side: Side): SnapAnchor[] {
-  return (["a", "b"] as const).map((half) => createAnchor(domino, half, side, "side-center"));
-}
-
-function createAnchor(domino: Domino, half: DominoHalf, side: Side, kind: AnchorKind): SnapAnchor {
-  const bounds = kind === "side-center" ? getDominoBounds(domino) : getHalfBounds(domino, half);
-  return {
-    half,
-    side,
-    kind,
-    point: getSideCenter(bounds, side),
-    normal: getSideNormal(side),
-  };
-}
-
-function getOuterHalf(domino: Domino, side: Side): DominoHalf {
-  const a = getHalfBounds(domino, "a");
-  const b = getHalfBounds(domino, "b");
-  return outerHalves[side](a, b);
-}
-
-function canConnectAnchors(
+function canConnectSlots(
   dragged: Domino,
-  draggedAnchor: SnapAnchor,
+  draggedSlot: Slot,
   target: Domino,
-  targetAnchor: SnapAnchor,
+  targetSlot: Slot,
 ): boolean {
-  if (draggedAnchor.side !== oppositeSide(targetAnchor.side)) {
+  if (draggedSlot.side !== oppositeSide(targetSlot.side)) {
     return false;
   }
 
-  return arePerpendicular(dragged, target)
-    ? isEndToSideCenter(draggedAnchor, targetAnchor)
-    : draggedAnchor.kind === "end" && targetAnchor.kind === "end";
-}
-
-function isEndToSideCenter(first: SnapAnchor, second: SnapAnchor): boolean {
-  return first.kind !== second.kind;
-}
-
-function normalizeJoint(dragged: Domino, joint: SnapJoint, target: Domino): SnapJoint {
-  if (!arePerpendicular(dragged, target)) {
-    return joint;
+  if (getOrientation(dragged) !== getOrientation(target)) {
+    return true;
   }
 
-  const draggedIsHorizontal = getDominoOrientation(dragged) === "horizontal";
-  const horizontal = draggedIsHorizontal ? dragged : target;
-  const vertical = draggedIsHorizontal ? target : dragged;
-  const horizontalHalf = draggedIsHorizontal ? joint.dragged.half : joint.target.half;
-  const verticalHalf = draggedIsHorizontal ? joint.target.half : joint.dragged.half;
-  const horizontalSide = getEndSide(horizontal, horizontalHalf);
-  const verticalSide = oppositeSide(horizontalSide);
-  const horizontalAnchor = createAnchor(horizontal, horizontalHalf, horizontalSide, "end");
-  const verticalAnchor = createAnchor(vertical, verticalHalf, verticalSide, "side-center");
-
-  return draggedIsHorizontal
-    ? { dragged: horizontalAnchor, target: verticalAnchor }
-    : { dragged: verticalAnchor, target: horizontalAnchor };
+  return isLongAxisSide(dragged, draggedSlot.side) && isLongAxisSide(target, targetSlot.side);
 }
 
-function getEndSide(domino: Domino, half: DominoHalf): Side {
-  const bounds = getHalfBounds(domino, half);
-
-  return getDominoOrientation(domino) === "horizontal"
-    ? getHorizontalEndSide(bounds, getDominoBounds(domino))
-    : getVerticalEndSide(bounds, getDominoBounds(domino));
+function getOrientation(domino: Domino): "horizontal" | "vertical" {
+  return getDominoBounds(domino).width > getDominoBounds(domino).height ? "horizontal" : "vertical";
 }
 
-function getHorizontalEndSide(half: Rect, domino: Rect): Side {
-  return half.x === domino.x ? "left" : "right";
-}
-
-function getVerticalEndSide(half: Rect, domino: Rect): Side {
-  return half.y === domino.y ? "top" : "bottom";
+function isLongAxisSide(domino: Domino, side: Side): boolean {
+  return getOrientation(domino) === "horizontal"
+    ? side === "left" || side === "right"
+    : side === "top" || side === "bottom";
 }
 
 function roundPoint(point: Point): Point {
@@ -286,61 +243,25 @@ function oppositeSide(side: Side): Side {
   return oppositeSides[side];
 }
 
-function arePerpendicular(left: Domino, right: Domino): boolean {
-  return getDominoOrientation(left) !== getDominoOrientation(right);
-}
-
-function getOccupiedSides(state: BoardState): Map<string, Set<Side>> {
-  const occupied = new Map<string, Set<Side>>();
+function getOccupiedHalves(state: BoardState): Map<string, Set<DominoHalf>> {
+  const occupied = new Map<string, Set<DominoHalf>>();
 
   for (const link of state.links) {
-    const first = state.dominoes.find((domino) => domino.id === link.dominoId1);
-    const second = state.dominoes.find((domino) => domino.id === link.dominoId2);
-    if (!first || !second) {
-      continue;
-    }
-
-    const firstBounds = arePerpendicular(first, second)
-      ? getDominoBounds(first)
-      : getHalfBounds(first, link.half1);
-    const secondBounds = arePerpendicular(first, second)
-      ? getDominoBounds(second)
-      : getHalfBounds(second, link.half2);
-    const sides = getTouchingSides(firstBounds, secondBounds);
-    if (!sides) {
-      continue;
-    }
-
-    addOccupiedSide(occupied, first.id, sides.first);
-    addOccupiedSide(occupied, second.id, sides.second);
+    addOccupiedHalf(occupied, link.dominoId1, link.half1);
+    addOccupiedHalf(occupied, link.dominoId2, link.half2);
   }
 
   return occupied;
 }
 
-function getTouchingSides(first: Rect, second: Rect): { first: Side; second: Side } | null {
-  const horizontalGap = getAxisGap(first.x, first.width, second.x, second.width);
-  const verticalGap = getAxisGap(first.y, first.height, second.y, second.height);
-
-  if (horizontalGap > verticalGap) {
-    return first.x <= second.x
-      ? { first: "right", second: "left" }
-      : { first: "left", second: "right" };
-  }
-
-  if (verticalGap > horizontalGap) {
-    return first.y <= second.y
-      ? { first: "bottom", second: "top" }
-      : { first: "top", second: "bottom" };
-  }
-
-  return null;
-}
-
-function addOccupiedSide(occupied: Map<string, Set<Side>>, dominoId: string, side: Side): void {
-  const sides = occupied.get(dominoId) ?? new Set<Side>();
-  sides.add(side);
-  occupied.set(dominoId, sides);
+function addOccupiedHalf(
+  occupied: Map<string, Set<DominoHalf>>,
+  dominoId: string,
+  half: DominoHalf,
+): void {
+  const halves = occupied.get(dominoId) ?? new Set<DominoHalf>();
+  halves.add(half);
+  occupied.set(dominoId, halves);
 }
 
 function collides(state: BoardState, dragged: Domino, snappedPosition: Point): boolean {
