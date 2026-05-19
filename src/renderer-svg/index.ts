@@ -79,8 +79,9 @@ export class SvgRenderer {
         group.append(
           createText({
             x: half.x + 12,
-            y: half.y + 25,
+            y: half.y,
             width: half.width - 24,
+            height: half.height,
             text: half.content.value,
             fill: "#111827",
             fontSize: 20,
@@ -141,6 +142,7 @@ export class SvgRenderer {
           x: -7,
           y: -9,
           width: 14,
+          height: 18,
           text: "X",
           fill: "#ffffff",
           fontSize: 14,
@@ -243,6 +245,7 @@ function createText(config: {
   x: number;
   y: number;
   width: number;
+  height: number;
   text: string;
   fill: string;
   fontSize: number;
@@ -250,11 +253,13 @@ function createText(config: {
 }) {
   const text = createSvgElement("text", {
     x: String(config.x + config.width / 2),
-    y: String(config.y + 20),
+    y: String(config.y + config.height / 2),
     fill: config.fill,
     "font-family": "Arial, sans-serif",
     "font-size": String(config.fontSize),
     "text-anchor": "middle",
+    "dominant-baseline": "middle",
+    dy: "0.1em",
     ...(config.fontWeight ? { "font-weight": config.fontWeight } : {}),
   });
   text.textContent = config.text;

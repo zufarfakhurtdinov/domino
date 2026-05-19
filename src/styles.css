@@ -34,11 +34,14 @@ body {
   transform-origin: top left;
 }
 
+.domino {
+  cursor: pointer;
+  user-select: none;
+}
+
 .domino-card {
   position: absolute;
   transform-origin: top left;
-  cursor: pointer;
-  user-select: none;
 }
 
 .domino-half {
