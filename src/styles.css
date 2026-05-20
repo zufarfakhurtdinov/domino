@@ -35,7 +35,7 @@ body {
 }
 
 .domino {
-  cursor: pointer;
+  cursor: default;
   user-select: none;
 }
 
