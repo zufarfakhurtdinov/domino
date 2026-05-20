@@ -76,16 +76,22 @@ export class DomRenderer {
     }
 
     if (view.snapHighlight) {
+      const frame = document.createElement("div");
+      frame.className = "snap-highlight-frame";
+      frame.style.width = `${view.snapHighlight.width + 8}px`;
+      frame.style.height = `${view.snapHighlight.height + 8}px`;
+      frame.style.transform = getDominoTransform(
+        view.snapHighlight.x,
+        view.snapHighlight.y,
+        view.snapHighlight.rotation,
+      );
+
       const highlight = document.createElement("div");
       highlight.className = "snap-highlight";
       highlight.style.width = `${view.snapHighlight.width}px`;
       highlight.style.height = `${view.snapHighlight.height}px`;
-      highlight.style.transform = getDominoTransform(
-        view.snapHighlight.x + 4,
-        view.snapHighlight.y + 4,
-        view.snapHighlight.rotation,
-      );
-      this.surface.append(highlight);
+      frame.append(highlight);
+      this.surface.append(frame);
     }
 
     for (const linkControl of view.linkControls) {

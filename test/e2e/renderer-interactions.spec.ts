@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { pairs } from "../../src/app/model";
+import { findSnapCandidate } from "../../src/core/snapping";
 import {
   getDominoBounds,
   getRectCenter,
   getRotationSize,
+  getTransformOrigin,
   HALF_HEIGHT,
   HALF_WIDTH,
   rotateClockwise,
@@ -100,6 +103,62 @@ for (const mode of modes) {
     expect(state.links).toEqual([]);
   });
 }
+
+test("dom snap highlight is inset inside the final rotated drop position", async ({ page }) => {
+  await page.goto("/domino/?fixture=snap&renderer=dom");
+  await page.waitForFunction(
+    () =>
+      typeof window.__DOMINO_TEST__?.drop === "function" &&
+      typeof window.__DOMINO_TEST__?.rotate === "function",
+  );
+  await page.evaluate(() => {
+    window.__DOMINO_TEST__.drop("target", { x: 300, y: 300, rotation: 90 });
+    window.__DOMINO_TEST__.rotate("dragged");
+    window.__DOMINO_TEST__.rotate("dragged");
+  });
+
+  const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  const dragged = stateBefore.dominoes.find((domino) => domino.id === "dragged");
+  expect(dragged).toBeDefined();
+  const candidate = findSnapCandidate(stateBefore, "dragged", pairs, { threshold: 10 });
+  expect(candidate).not.toBeNull();
+
+  const appBox = await page.locator("#app").boundingBox();
+  const draggedBox = await page.locator("[data-domino-id='dragged']").boundingBox();
+  expect(appBox).not.toBeNull();
+  expect(draggedBox).not.toBeNull();
+  const startLocalPoint = { x: 50, y: 50 };
+  const start = {
+    x: appBox!.x + getTransformOrigin(dragged!).x - startLocalPoint.x,
+    y: appBox!.y + getTransformOrigin(dragged!).y - startLocalPoint.y,
+  };
+  const previewPosition = {
+    x: candidate!.snappedPosition.x + 6,
+    y: candidate!.snappedPosition.y + 4,
+  };
+  const previewTransform = getTransformOrigin({ ...dragged!, ...previewPosition });
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(
+    appBox!.x + previewTransform.x - startLocalPoint.x,
+    appBox!.y + previewTransform.y - startLocalPoint.y,
+    { steps: 8 },
+  );
+
+  await expect(page.locator(".snap-highlight")).toBeVisible();
+  const highlightBox = await page.locator(".snap-highlight").boundingBox();
+  expect(highlightBox).not.toBeNull();
+
+  await page.mouse.up();
+
+  const finalBox = await page.locator("[data-domino-id='dragged']").boundingBox();
+  expect(finalBox).not.toBeNull();
+  expect(highlightBox!.x - finalBox!.x).toBeCloseTo(4, 0);
+  expect(highlightBox!.y - finalBox!.y).toBeCloseTo(4, 0);
+  expect(finalBox!.x + finalBox!.width - (highlightBox!.x + highlightBox!.width)).toBeCloseTo(4, 0);
+  expect(finalBox!.y + finalBox!.height - (highlightBox!.y + highlightBox!.height)).toBeCloseTo(4, 0);
+});
 
 function rotateAroundPivot(dominoToRotate: Domino, pivot: Point): Domino {
   const center = getRectCenter(getDominoBounds(dominoToRotate));

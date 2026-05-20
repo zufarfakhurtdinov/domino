@@ -64,12 +64,19 @@ body {
   border-radius: 0 6px 6px 0;
 }
 
+.snap-highlight-frame {
+  position: absolute;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
 .snap-highlight {
   position: absolute;
+  left: 4px;
+  top: 4px;
   box-sizing: border-box;
   border: 4px dashed #16a34a;
   border-radius: 8px;
-  transform-origin: top left;
   pointer-events: none;
 }
 
