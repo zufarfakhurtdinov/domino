@@ -95,6 +95,26 @@ body {
   cursor: pointer;
 }
 
+.domino-detach-control:hover {
+  background: #ef4444;
+}
+
+.domino-detach-control:active {
+  background: #b91c1c;
+}
+
+[data-role="detach-control"] circle {
+  fill: #dc2626;
+}
+
+[data-role="detach-control"]:hover circle {
+  fill: #ef4444;
+}
+
+[data-role="detach-control"]:active circle {
+  fill: #b91c1c;
+}
+
 .zoom-controls {
   position: absolute;
   top: 50%;
