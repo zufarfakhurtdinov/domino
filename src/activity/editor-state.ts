@@ -48,3 +48,5 @@ export const isDraftContentValid = (content: DraftContent): boolean => {
 };
 
 export const isDraftPairValid = (pair: DraftPair): boolean => pair.items.every(isDraftContentValid);
+
+export const canExportDraftPairs = (pairs: DraftPair[]): boolean => pairs.length >= 2 && pairs.every(isDraftPairValid);
