@@ -1,0 +1,47 @@
+{
+  "title": "Animals A1",
+  "pairs": [
+    {
+      "id": 1,
+      "items": [
+        { "type": "text", "value": "cat" },
+        { "type": "image", "src": "cat.svg" }
+      ]
+    },
+    {
+      "id": 2,
+      "items": [
+        { "type": "text", "value": "dog" },
+        { "type": "audio", "src": "dog.mp3" }
+      ]
+    },
+    {
+      "id": 3,
+      "items": [
+        { "type": "text", "value": "owl" },
+        { "type": "image", "src": "owl.svg" }
+      ]
+    },
+    {
+      "id": 4,
+      "items": [
+        { "type": "text", "value": "fish" },
+        { "type": "audio", "src": "fish.mp3" }
+      ]
+    },
+    {
+      "id": 5,
+      "items": [
+        { "type": "text", "value": "bird" },
+        { "type": "image", "src": "bird.png" }
+      ]
+    },
+    {
+      "id": 6,
+      "items": [
+        { "type": "text", "value": "horse" },
+        { "type": "audio", "src": "horse.mp3" }
+      ]
+    }
+  ]
+}

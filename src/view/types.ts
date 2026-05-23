@@ -1,4 +1,4 @@
-import type { BoardState, Content, DominoHalf, Link, Rotation, SnapCandidate } from "../core/types";
+import type { BoardState, Content, DominoHalf, Link, Point, Rotation, SnapCandidate } from "../core/types";
 
 export type BoardMetrics = {
   halfWidth: number;
