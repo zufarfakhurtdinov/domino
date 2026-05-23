@@ -179,6 +179,8 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   }
 
   function createZoomControls(appContainer: HTMLElement): HTMLDivElement {
+    appContainer.append(createImportButton());
+
     const controls = document.createElement("div");
     controls.className = "zoom-controls";
 
@@ -197,6 +199,17 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
 
     appContainer.append(controls);
     return controls;
+  }
+
+  function createImportButton(): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "zoom-button import-activity";
+    button.setAttribute("aria-label", "Import activity");
+    button.title = "Import activity";
+    button.innerHTML = createImportIcon();
+
+    return button;
   }
 
   function createZoomButton(config: {
@@ -236,6 +249,17 @@ function createZoomIcon(kind: "plus" | "minus"): string {
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M7 12h10" />
       ${verticalStroke}
+    </svg>
+  `;
+}
+
+function createImportIcon(): string {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5" />
+      <path d="M2 19h7" />
+      <path d="M5 16l-3 3l3 3" />
     </svg>
   `;
 }

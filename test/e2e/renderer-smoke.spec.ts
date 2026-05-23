@@ -4,6 +4,7 @@ test("renders the default SVG board", async ({ page }) => {
   await page.goto("/domino/");
 
   await expect(page.locator(".board-svg")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import activity" })).toBeVisible();
 
   const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   expect(state.dominoes.map((domino) => domino.id)).toEqual([

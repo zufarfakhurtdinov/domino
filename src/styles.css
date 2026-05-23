@@ -164,6 +164,13 @@ body {
   stroke-linejoin: round;
 }
 
+.import-activity {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
 .activity-editor {
   box-sizing: border-box;
   min-height: 100%;
