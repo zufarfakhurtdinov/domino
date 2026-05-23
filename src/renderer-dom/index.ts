@@ -1,4 +1,5 @@
 import type { Link, Point } from "../core/types";
+import type { Content } from "../core/types";
 import type { BoardView } from "../view/types";
 import { getBoardSurfaceTransform, getDominoTransform } from "./styles";
 
@@ -68,7 +69,7 @@ export class DomRenderer {
         halfElement.style.width = `${half.width}px`;
         halfElement.style.height = `${half.height}px`;
         halfElement.style.background = half.fill;
-        halfElement.textContent = half.content.value;
+        halfElement.append(renderContent(half.content));
         element.append(halfElement);
       });
 
@@ -119,4 +120,37 @@ export class DomRenderer {
       y: (event.clientY - bounds.top) / this.scale,
     };
   }
+}
+
+function renderContent(content: Content): Node {
+  if (content.type === "text") {
+    return document.createTextNode(content.value);
+  }
+
+  if (content.type === "image") {
+    const image = document.createElement("img");
+    image.className = "domino-content-image";
+    image.src = content.url;
+    image.alt = "";
+    return image;
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "domino-audio-button";
+  button.setAttribute("aria-label", "Play audio");
+  button.innerHTML = createPlayIcon();
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    void new Audio(content.url).play();
+  });
+  return button;
+}
+
+function createPlayIcon(): string {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z" />
+    </svg>
+  `;
 }

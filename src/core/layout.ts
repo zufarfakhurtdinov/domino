@@ -1,10 +1,10 @@
 import { getDominoBounds, getRotationSize, rectanglesOverlap, HALF_HEIGHT, HALF_WIDTH } from "./geometry";
-import type { BoardState, Content, Domino, Rect, Rotation } from "./types";
+import type { BoardState, Domino, DominoSide, Rect, Rotation } from "./types";
 
 export type DominoInput = {
   id: string;
-  a: Content;
-  b: Content;
+  a: DominoSide;
+  b: DominoSide;
 };
 
 export type LayoutOptions = {

@@ -1,4 +1,4 @@
-import type { DominoHalf, Link, Point } from "../core/types";
+import type { Content, DominoHalf, Link, Point } from "../core/types";
 import type { BoardView } from "../view/types";
 
 type SvgRendererCallbacks = {
@@ -76,17 +76,7 @@ export class SvgRenderer {
           }),
         );
 
-        group.append(
-          createText({
-            x: half.x + 12,
-            y: half.y,
-            width: half.width - 24,
-            height: half.height,
-            text: half.content.value,
-            fill: "#111827",
-            fontSize: 20,
-          }),
-        );
+        group.append(createContentElement(half.content, half.x, half.y, half.width, half.height));
       });
 
       boardGroup.append(group);
@@ -160,6 +150,51 @@ export class SvgRenderer {
       y: (event.clientY - bounds.top) / this.scale,
     };
   }
+}
+
+function createContentElement(content: Content, x: number, y: number, width: number, height: number): SVGElement {
+  if (content.type === "text") {
+    return createText({
+      x: x + 12,
+      y,
+      width: width - 24,
+      height,
+      text: content.value,
+      fill: "#111827",
+      fontSize: 20,
+    });
+  }
+
+  if (content.type === "image") {
+    return createSvgElement("image", {
+      x: String(x + 10),
+      y: String(y + 10),
+      width: String(width - 20),
+      height: String(height - 20),
+      href: content.url,
+      preserveAspectRatio: "xMidYMid meet",
+    });
+  }
+
+  const button = createSvgElement("g", {
+    transform: `translate(${x + width / 2} ${y + height / 2})`,
+    role: "button",
+    "aria-label": "Play audio",
+  });
+  button.classList.add("domino-audio-button-svg");
+  button.style.cursor = "pointer";
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    void new Audio(content.url).play();
+  });
+  button.append(createSvgElement("circle", { cx: "0", cy: "0", r: "18", fill: "#111827" }));
+  button.append(
+    createSvgElement("path", {
+      d: "M-5 -9v18a1 1 0 0 0 1.524 .852l14.5 -9a1 1 0 0 0 0 -1.704l-14.5 -9a1 1 0 0 0 -1.524 .852z",
+      fill: "#ffffff",
+    }),
+  );
+  return button;
 }
 
 function createSvgElement<K extends keyof SVGElementTagNameMap>(

@@ -1,5 +1,5 @@
 import { HALF_HEIGHT, HALF_WIDTH, SNAP_GAP } from "../core/geometry";
-import type { BoardState, Content, Domino, Pair } from "../core/types";
+import type { BoardState, Domino, DominoSide, Pair } from "../core/types";
 
 const BOARD_LEFT = 32;
 const BOARD_TOP = 32;
@@ -80,8 +80,8 @@ export function createFixtureBoard(fixture: string | null): BoardState {
 
 function createDomino(
   id: string,
-  a: Content,
-  b: Content,
+  a: DominoSide,
+  b: DominoSide,
   x: number,
   y: number,
   rotation: Domino["rotation"],
@@ -89,14 +89,14 @@ function createDomino(
   return { id, a, b, x, y, rotation };
 }
 
-function text(key: string, value: string): Content {
-  return { kind: "text", key, value };
+function text(key: string, value: string): DominoSide {
+  return { key, content: { type: "text", value } };
 }
 
-function word(key: string, value: string, number: number): Content {
+function word(key: string, value: string, number: number): DominoSide {
   return text(key, `${value} (${number})`);
 }
 
-function image(key: string, value: string): Content {
-  return { kind: "image", key, value };
+function image(key: string, value: string): DominoSide {
+  return { key, content: { type: "text", value } };
 }

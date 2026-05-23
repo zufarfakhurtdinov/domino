@@ -1,7 +1,14 @@
-import type { BoardState, Content, Domino, Rotation } from "../src/core/types";
+import type { BoardState, Content, Domino, DominoSide, Rotation } from "../src/core/types";
 
-export function content(key: string, kind: Content["kind"] = "text"): Content {
-  return { kind, key, value: key };
+export function content(key: string, type: Content["type"] = "text"): DominoSide {
+  const renderableContent: Content =
+    type === "text"
+      ? { type: "text", value: key }
+      : type === "image"
+        ? { type: "image", url: key }
+        : { type: "audio", url: key };
+
+  return { key, content: renderableContent };
 }
 
 export function domino(overrides: Partial<Domino> = {}): Domino {

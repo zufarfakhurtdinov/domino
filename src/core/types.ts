@@ -1,11 +1,13 @@
 export type Rotation = 0 | 90 | 180 | 270;
 
-export type ContentKind = "text" | "image" | "audio";
+export type Content =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string }
+  | { type: "audio"; url: string };
 
-export type Content = {
-  kind: ContentKind;
+export type DominoSide = {
   key: string;
-  value: string;
+  content: Content;
 };
 
 export type Point = {
@@ -22,8 +24,8 @@ export type DominoHalf = "a" | "b";
 
 export type Domino = {
   id: string;
-  a: Content;
-  b: Content;
+  a: DominoSide;
+  b: DominoSide;
   x: number;
   y: number;
   rotation: Rotation;

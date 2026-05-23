@@ -56,6 +56,32 @@ body {
   user-select: none;
 }
 
+.domino-content-image {
+  max-width: calc(100% - 20px);
+  max-height: calc(100% - 20px);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.domino-audio-button {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.domino-audio-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  stroke: none;
+}
+
 .domino-half[data-half="a"] {
   border-radius: 6px 0 0 6px;
 }

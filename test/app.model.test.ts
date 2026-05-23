@@ -8,7 +8,12 @@ describe("app model fixtures", () => {
     const state = createFixtureBoard(null);
 
     expect(state.links).toEqual([]);
-    expect(state.dominoes.map((domino) => [domino.a.value, domino.b.value])).toEqual([
+    expect(
+      state.dominoes.map((domino) => [
+        domino.a.content.type === "text" ? domino.a.content.value : "",
+        domino.b.content.type === "text" ? domino.b.content.value : "",
+      ]),
+    ).toEqual([
       ["one (1)", "two (2)"],
       ["two (2)", "three (3)"],
       ["one (1)", "two (2)"],
