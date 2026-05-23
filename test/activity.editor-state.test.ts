@@ -1,5 +1,6 @@
 import {
   createInitialDraftPairs,
+  canExportDraftPairs,
   discardMedia,
   isDraftContentValid,
   isDraftPairValid,
@@ -7,6 +8,7 @@ import {
   setImageFile,
   setTextValue,
 } from "../src/activity/editor-state";
+import type { DraftPair } from "../src/activity/editor-types";
 
 const file = (name: string, type: string) => new File(["content"], name, { type });
 
@@ -63,4 +65,19 @@ describe("activity editor draft state", () => {
       }),
     ).toBe(true);
   });
+
+  it("requires at least two valid rows before export", () => {
+    const validPair = pair([
+      { kind: "text", text: "cat" },
+      { kind: "text", text: "dog" },
+    ]);
+
+    expect(canExportDraftPairs([validPair])).toBe(false);
+    expect(canExportDraftPairs([validPair, validPair])).toBe(true);
+    expect(canExportDraftPairs([validPair, { items: [{ kind: "empty", text: "" }, { kind: "empty", text: "" }] }])).toBe(
+      false,
+    );
+  });
 });
+
+const pair = (items: DraftPair["items"]): DraftPair => ({ items });
