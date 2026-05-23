@@ -23,6 +23,10 @@ describe("matching", () => {
     expect(canMatch(content("cat_en"), content("cat_en"), pairs)).toBe(false);
   });
 
+  it("allows matching the same key when the pair definition explicitly allows it", () => {
+    expect(canMatch(content("1"), content("1"), [{ a: "1", b: "1" }])).toBe(true);
+  });
+
   it("ignores duplicate pair definitions", () => {
     expect(
       canMatch(content("cat_en"), content("cat_audio", "audio"), [...pairs, pairs[1]]),
