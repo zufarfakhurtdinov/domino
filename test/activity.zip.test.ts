@@ -5,7 +5,7 @@ import type { ActivityExport } from "../src/activity/export";
 const file = (name: string, content: string) => new File([content], name);
 
 describe("activity zip writer", () => {
-  it("writes activity.json and media files at the zip root", async () => {
+  it("writes activity.json and media files inside the activity directory", async () => {
     const activityExport: ActivityExport = {
       activity: {
         title: "activity",
@@ -35,9 +35,9 @@ describe("activity zip writer", () => {
     const blob = await createActivityZip(activityExport);
     const zip = await JSZip.loadAsync(blob);
 
-    expect(Object.keys(zip.files)).toEqual(["activity.json", "cat.png", "dog.mp3"]);
-    expect(JSON.parse(await zip.file("activity.json")!.async("string"))).toEqual(activityExport.activity);
-    expect(await zip.file("cat.png")!.async("string")).toBe("image");
-    expect(await zip.file("dog.mp3")!.async("string")).toBe("audio");
+    expect(Object.keys(zip.files)).toEqual(["activity/", "activity/activity.json", "activity/cat.png", "activity/dog.mp3"]);
+    expect(JSON.parse(await zip.file("activity/activity.json")!.async("string"))).toEqual(activityExport.activity);
+    expect(await zip.file("activity/cat.png")!.async("string")).toBe("image");
+    expect(await zip.file("activity/dog.mp3")!.async("string")).toBe("audio");
   });
 });
