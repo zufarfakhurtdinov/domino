@@ -1,5 +1,5 @@
 export type ActivityData = {
-  title?: string;
+  title: string;
   pairs: PairData[];
 };
 
