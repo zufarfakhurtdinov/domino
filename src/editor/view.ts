@@ -5,12 +5,6 @@ export const renderEditorHtml = (pairs: DraftPair[]): string => `
   <section class="activity-editor" aria-labelledby="activity-editor-title">
     <header class="activity-editor-header">
       <h1 id="activity-editor-title">Activity editor</h1>
-      <div class="activity-editor-actions">
-        <button type="button" class="editor-button" data-action="add-row">Add row</button>
-        <button type="button" class="editor-button editor-button-primary" data-action="export"${
-          canExportDraftPairs(pairs) ? "" : " disabled"
-        }>Export</button>
-      </div>
     </header>
     <div class="activity-editor-table" role="table" aria-label="Activity pairs">
       <div class="activity-editor-row activity-editor-row-head" role="row">
@@ -20,6 +14,14 @@ export const renderEditorHtml = (pairs: DraftPair[]): string => `
         <div role="columnheader">Actions</div>
       </div>
       ${pairs.map(renderRow).join("")}
+    </div>
+    <div class="activity-editor-bottom-actions">
+      <div></div>
+      <button type="button" class="editor-button" data-action="add-row">Add row</button>
+      <button type="button" class="editor-button editor-button-primary" data-action="export"${
+        canExportDraftPairs(pairs) ? "" : " disabled"
+      }>Export</button>
+      <div></div>
     </div>
   </section>
 `;

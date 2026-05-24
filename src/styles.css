@@ -210,10 +210,6 @@ body {
 }
 
 .activity-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   max-width: 1080px;
   margin: 0 auto 20px;
 }
@@ -222,11 +218,6 @@ body {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-}
-
-.activity-editor-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .editor-button,
@@ -272,6 +263,19 @@ body {
   border-radius: 8px;
   overflow: hidden;
   background: #ffffff;
+}
+
+.activity-editor-bottom-actions {
+  display: grid;
+  grid-template-columns: 52px minmax(260px, 1fr) minmax(260px, 1fr) 72px;
+  gap: 12px;
+  max-width: 1080px;
+  margin: 12px auto 0;
+}
+
+.activity-editor-bottom-actions .editor-button {
+  justify-self: start;
+  margin-left: 1px;
 }
 
 .activity-editor-row {
