@@ -7,7 +7,6 @@ import {
   SNAP_GAP,
 } from "./geometry";
 import { getConnectedDominoIds } from "./connections";
-import { canMatch } from "./matching";
 import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
 
 export type SnapOptions = {
@@ -17,7 +16,7 @@ export type SnapOptions = {
 export function findSnapCandidate(
   state: BoardState,
   draggedDominoId: string,
-  pairs: Pair[],
+  _pairs: Pair[],
   options: SnapOptions,
 ): SnapCandidate | null {
   const dragged = state.dominoes.find((domino) => domino.id === draggedDominoId);
@@ -36,10 +35,6 @@ export function findSnapCandidate(
     }
 
     for (const joint of getJointCandidates(dragged, target, occupiedHalves)) {
-      if (!canMatch(dragged[joint.dragged.half], target[joint.target.half], pairs)) {
-        continue;
-      }
-
       const candidate = candidateForJoint(dragged, joint, target);
 
       if (candidate.distance > threshold) {
