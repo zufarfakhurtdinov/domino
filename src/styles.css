@@ -75,11 +75,32 @@ body {
   cursor: pointer;
 }
 
+.domino-audio-button:hover {
+  background: #2563eb;
+}
+
+.domino-audio-button:active {
+  background: #1d4ed8;
+  transform: scale(0.94);
+}
+
 .domino-audio-button svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
   stroke: none;
+}
+
+.domino-audio-button-svg circle {
+  fill: #111827;
+}
+
+.domino-audio-button-svg:hover circle {
+  fill: #2563eb;
+}
+
+.domino-audio-button-svg:active circle {
+  fill: #1d4ed8;
 }
 
 .domino-half[data-half="a"] {

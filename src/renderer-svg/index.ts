@@ -190,7 +190,7 @@ function createContentElement(content: Content, x: number, y: number, width: num
     event.stopPropagation();
     void new Audio(content.url).play();
   });
-  button.append(createSvgElement("circle", { cx: "0", cy: "0", r: "18", fill: "#111827" }));
+  button.append(createSvgElement("circle", { cx: "0", cy: "0", r: "18" }));
   button.append(
     createSvgElement("path", {
       d: "M-5 -9v18a1 1 0 0 0 1.524 .852l14.5 -9a1 1 0 0 0 0 -1.704l-14.5 -9a1 1 0 0 0 -1.524 .852z",
