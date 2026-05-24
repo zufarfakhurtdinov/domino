@@ -140,6 +140,9 @@ function renderContent(content: Content): Node {
   button.className = "domino-audio-button";
   button.setAttribute("aria-label", "Play audio");
   button.innerHTML = createPlayIcon();
+  button.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     void new Audio(content.url).play();

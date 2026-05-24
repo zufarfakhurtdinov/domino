@@ -183,6 +183,9 @@ function createContentElement(content: Content, x: number, y: number, width: num
   });
   button.classList.add("domino-audio-button-svg");
   button.style.cursor = "pointer";
+  button.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     void new Audio(content.url).play();
