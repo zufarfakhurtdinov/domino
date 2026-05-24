@@ -273,8 +273,10 @@ body {
   margin: 12px auto 0;
 }
 
-.activity-editor-bottom-actions .editor-button {
-  justify-self: start;
+.activity-editor-bottom-action-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   margin-left: 1px;
 }
 

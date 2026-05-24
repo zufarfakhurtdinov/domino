@@ -17,10 +17,13 @@ export const renderEditorHtml = (pairs: DraftPair[]): string => `
     </div>
     <div class="activity-editor-bottom-actions">
       <div></div>
-      <button type="button" class="editor-button" data-action="add-row">Add row</button>
-      <button type="button" class="editor-button editor-button-primary" data-action="export"${
-        canExportDraftPairs(pairs) ? "" : " disabled"
-      }>Export</button>
+      <div class="activity-editor-bottom-action-group">
+        <button type="button" class="editor-button" data-action="add-row">Add row</button>
+        <button type="button" class="editor-button editor-button-primary" data-action="export"${
+          canExportDraftPairs(pairs) ? "" : " disabled"
+        }>Export</button>
+      </div>
+      <div></div>
       <div></div>
     </div>
   </section>
