@@ -73,6 +73,34 @@ async function resolveContent(zip: JSZip, activityBasePath: string, content: Con
 
   return {
     type: content.type,
-    url: URL.createObjectURL(await file.async("blob")),
+    url: URL.createObjectURL(new Blob([await file.async("arraybuffer")], { type: getMimeType(path) })),
   };
+}
+
+function getMimeType(path: string): string {
+  const extension = path.toLocaleLowerCase().split(".").at(-1);
+
+  switch (extension) {
+    case "svg":
+      return "image/svg+xml";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    case "mp3":
+      return "audio/mpeg";
+    case "wav":
+      return "audio/wav";
+    case "ogg":
+      return "audio/ogg";
+    case "m4a":
+      return "audio/mp4";
+    default:
+      return "";
+  }
 }

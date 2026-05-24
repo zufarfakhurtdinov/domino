@@ -1,6 +1,22 @@
 import JSZip from "jszip";
 import { loadActivityZip } from "../src/activity/load-zip";
 
+const objectUrls = new Map<string, Blob>();
+const originalCreateObjectUrl = URL.createObjectURL;
+
+beforeEach(() => {
+  objectUrls.clear();
+  URL.createObjectURL = (blob: Blob) => {
+    const url = `blob:test-${objectUrls.size}`;
+    objectUrls.set(url, blob);
+    return url;
+  };
+});
+
+afterEach(() => {
+  URL.createObjectURL = originalCreateObjectUrl;
+});
+
 describe("activity zip loader", () => {
   it("loads activity data and resolves media src files to object URLs", async () => {
     const file = await createActivityZip({
@@ -64,6 +80,33 @@ describe("activity zip loader", () => {
       { type: "text", value: "cat" },
       { type: "image", url: expect.stringMatching(/^blob:/) },
     ]);
+  });
+
+  it("creates media object URLs with MIME types inferred from file extensions", async () => {
+    const activity = await loadActivityZip(
+      await createActivityZip({
+        "activity.json": JSON.stringify({
+          title: "activity",
+          pairs: [
+            {
+              id: 1,
+              items: [
+                { type: "image", src: "cat.svg" },
+                { type: "audio", src: "cat.mp3" },
+              ],
+            },
+          ],
+        }),
+        "cat.svg": "<svg></svg>",
+        "cat.mp3": "audio",
+      }),
+    );
+
+    const [image, audio] = activity.pairs[0].items;
+    expect(image.type).toBe("image");
+    expect(audio.type).toBe("audio");
+    expect(objectUrls.get(image.type === "image" ? image.url : "")?.type).toBe("image/svg+xml");
+    expect(objectUrls.get(audio.type === "audio" ? audio.url : "")?.type).toBe("audio/mpeg");
   });
 
   it("loads activity json from any single top-level directory and ignores macOS metadata", async () => {
