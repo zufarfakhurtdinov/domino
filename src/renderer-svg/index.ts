@@ -90,7 +90,6 @@ export class SvgRenderer {
             y: half.y,
             width: half.width,
             height: half.height,
-            fill: THEME.tileInsetFill,
           }),
         );
 
@@ -323,7 +322,6 @@ function createHalfPath(config: {
   y: number;
   width: number;
   height: number;
-  fill: string;
 }) {
   const radius = 6;
   const x = config.x;
@@ -355,7 +353,7 @@ function createHalfPath(config: {
 
   const path = createSvgElement("path", {
     d,
-    fill: config.fill,
+    fill: THEME.tileInsetFill,
   });
   path.classList.add("domino-half-surface");
   return path;

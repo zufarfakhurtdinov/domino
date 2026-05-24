@@ -34,7 +34,6 @@ export type DominoHalfView = {
   y: number;
   width: number;
   height: number;
-  fill: string;
   content: Content;
 };
 
