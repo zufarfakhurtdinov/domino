@@ -226,16 +226,16 @@ function createContentElement(content: Content, x: number, y: number, width: num
       cx: "0",
       cy: "0",
       r: "18",
-      fill: THEME.contentFill,
-      stroke: THEME.tileFill,
-      "stroke-width": "2",
+      fill: THEME.tileFill,
+      stroke: "#d8cdb7",
+      "stroke-width": "1",
       class: "domino-audio-button-ring",
     }),
   );
   button.append(
     createSvgElement("path", {
       d: "M-5 -9v18a1 1 0 0 0 1.524 .852l14.5 -9a1 1 0 0 0 0 -1.704l-14.5 -9a1 1 0 0 0 -1.524 .852z",
-      fill: "#ffffff",
+      fill: "#4f666d",
     }),
   );
   return button;

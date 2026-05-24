@@ -106,23 +106,41 @@ span.domino-content-image-frame {
 .domino-audio-button {
   width: 42px;
   height: 42px;
-  border: 2px solid #eee7d8;
+  border: 1px solid #d8cdb7;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #27313a;
-  color: #ffffff;
-  box-shadow: 0 2px 5px rgba(39, 49, 58, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(238, 231, 216, 0.95)),
+    #eee7d8;
+  color: #4f666d;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 3px 8px rgba(39, 49, 58, 0.22);
   cursor: pointer;
 }
 
 .domino-audio-button:hover {
-  background: #384550;
+  border-color: #8ea0a4;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(246, 240, 228, 1)),
+    #f8f2e6;
+  color: #27313a;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 4px 10px rgba(39, 49, 58, 0.28);
 }
 
 .domino-audio-button:active {
-  background: #1f2932;
-  transform: scale(0.94);
+  border-color: #c8bcaa;
+  background:
+    linear-gradient(180deg, rgba(226, 216, 199, 0.95), rgba(238, 231, 216, 1)),
+    #e8decc;
+  color: #27313a;
+  box-shadow:
+    0 2px 4px rgba(39, 49, 58, 0.18) inset,
+    0 1px 3px rgba(39, 49, 58, 0.16);
+  transform: scale(0.95);
 }
 
 .domino-audio-button svg {
@@ -133,15 +151,27 @@ span.domino-content-image-frame {
 }
 
 .domino-audio-button-svg circle {
-  fill: #27313a;
+  fill: #eee7d8;
+  stroke: #d8cdb7;
 }
 
 .domino-audio-button-svg:hover circle {
-  fill: #384550;
+  fill: #f8f2e6;
+  stroke: #8ea0a4;
 }
 
 .domino-audio-button-svg:active circle {
-  fill: #1f2932;
+  fill: #e8decc;
+  stroke: #c8bcaa;
+}
+
+.domino-audio-button-svg path {
+  fill: #4f666d;
+}
+
+.domino-audio-button-svg:hover path,
+.domino-audio-button-svg:active path {
+  fill: #27313a;
 }
 
 .domino-half[data-half="a"] {

@@ -60,7 +60,8 @@ test("svg media halves use inset image frames and muted audio controls", async (
   await expect(page.locator(".domino-content-image-frame")).toHaveCount(2);
   await expect(page.locator(".domino-content-image")).toHaveCount(2);
   await expect(page.locator(".domino-audio-button-svg .domino-audio-button-ring")).toHaveCount(1);
-  await expect(page.locator(".domino-audio-button-svg circle")).toHaveAttribute("fill", "#27313a");
+  await expect(page.locator(".domino-audio-button-svg circle")).toHaveAttribute("fill", "#eee7d8");
+  await expect(page.locator(".domino-audio-button-svg path")).toHaveAttribute("fill", "#4f666d");
 });
 
 async function createMediaActivityZip(): Promise<ArrayBuffer> {
