@@ -26,6 +26,7 @@ export function findSnapCandidate(
   const candidates: SnapCandidate[] = [];
   const threshold = options.threshold * HALF_WIDTH;
   const occupiedHalves = getOccupiedHalves(state);
+  const occupiedBroadSides = getOccupiedBroadSides(state);
   const draggedGroup = new Set(getConnectedDominoIds(state, dragged.id));
 
   for (const target of state.dominoes) {
@@ -33,7 +34,7 @@ export function findSnapCandidate(
       continue;
     }
 
-    for (const joint of getJointCandidates(dragged, target, occupiedHalves)) {
+    for (const joint of getJointCandidates(dragged, target, occupiedHalves, occupiedBroadSides)) {
       const candidate = candidateForJoint(dragged, joint, target);
 
       if (candidate.distance > threshold) {
@@ -137,9 +138,10 @@ function getJointCandidates(
   dragged: Domino,
   target: Domino,
   occupiedHalves: ReadonlyMap<string, ReadonlySet<DominoHalf>>,
+  occupiedBroadSides: ReadonlyMap<string, ReadonlySet<Side>>,
 ): SnapJoint[] {
-  const draggedSlots = getSlots(dragged, occupiedHalves);
-  const targetSlots = getSlots(target, occupiedHalves);
+  const draggedSlots = getSlots(dragged, occupiedHalves, occupiedBroadSides);
+  const targetSlots = getSlots(target, occupiedHalves, occupiedBroadSides);
   const joints: SnapJoint[] = [];
 
   for (const draggedSlot of draggedSlots) {
@@ -153,26 +155,37 @@ function getJointCandidates(
   return joints;
 }
 
-function getSlots(domino: Domino, occupiedHalves: ReadonlyMap<string, ReadonlySet<DominoHalf>>): Slot[] {
+function getSlots(
+  domino: Domino,
+  occupiedHalves: ReadonlyMap<string, ReadonlySet<DominoHalf>>,
+  occupiedBroadSides: ReadonlyMap<string, ReadonlySet<Side>>,
+): Slot[] {
   const occupied = occupiedHalves.get(domino.id) ?? new Set<DominoHalf>();
-  const dominoBounds = getDominoBounds(domino);
+  const occupiedSides = occupiedBroadSides.get(domino.id) ?? new Set<Side>();
 
   return halves.flatMap((half) => {
     if (occupied.has(half)) {
       return [];
     }
 
-    const halfBounds = getHalfBounds(domino, half);
-
-    return sides
-      .filter((side) => isExposedSide(halfBounds, dominoBounds, side))
-      .map((side) => ({
-        half,
-        side,
-        point: getSideCenter(halfBounds, side),
-        normal: getSideNormal(side),
-      }));
+    return getHalfSlots(domino, half).filter(
+      (slot) => !isBroadSide(domino, slot.side) || !occupiedSides.has(slot.side),
+    );
   });
+}
+
+function getHalfSlots(domino: Domino, half: DominoHalf): Slot[] {
+  const dominoBounds = getDominoBounds(domino);
+  const halfBounds = getHalfBounds(domino, half);
+
+  return sides
+    .filter((side) => isExposedSide(halfBounds, dominoBounds, side))
+    .map((side) => ({
+      half,
+      side,
+      point: getSideCenter(halfBounds, side),
+      normal: getSideNormal(side),
+    }));
 }
 
 function isExposedSide(half: Rect, domino: Rect, side: Side): boolean {
@@ -218,6 +231,10 @@ function isLongAxisSide(domino: Domino, side: Side): boolean {
     : side === "top" || side === "bottom";
 }
 
+function isBroadSide(domino: Domino, side: Side): boolean {
+  return !isLongAxisSide(domino, side);
+}
+
 function roundPoint(point: Point): Point {
   return {
     x: Number(point.x.toFixed(6)),
@@ -248,6 +265,52 @@ function getOccupiedHalves(state: BoardState): Map<string, Set<DominoHalf>> {
   return occupied;
 }
 
+function getOccupiedBroadSides(state: BoardState): Map<string, Set<Side>> {
+  const occupied = new Map<string, Set<Side>>();
+  const dominoById = new Map(state.dominoes.map((domino) => [domino.id, domino]));
+
+  for (const link of state.links) {
+    const first = dominoById.get(link.dominoId1);
+    const second = dominoById.get(link.dominoId2);
+
+    if (!first || !second) {
+      continue;
+    }
+
+    const joint = inferLinkedJoint(first, link.half1, second, link.half2);
+
+    if (!joint) {
+      continue;
+    }
+
+    if (isBroadSide(first, joint.dragged.side)) {
+      addOccupiedBroadSide(occupied, first.id, joint.dragged.side);
+    }
+
+    if (isBroadSide(second, joint.target.side)) {
+      addOccupiedBroadSide(occupied, second.id, joint.target.side);
+    }
+  }
+
+  return occupied;
+}
+
+function inferLinkedJoint(first: Domino, firstHalf: DominoHalf, second: Domino, secondHalf: DominoHalf): SnapJoint | null {
+  return getHalfSlots(first, firstHalf)
+    .flatMap((firstSlot) =>
+      getHalfSlots(second, secondHalf)
+        .filter((secondSlot) => canConnectSlots(first, firstSlot, second, secondSlot))
+        .map((secondSlot) => ({ dragged: firstSlot, target: secondSlot })),
+    )
+    .sort(
+      (left, right) =>
+        Math.abs(distanceBetween(left.dragged.point, left.target.point) - SNAP_GAP) -
+          Math.abs(distanceBetween(right.dragged.point, right.target.point) - SNAP_GAP) ||
+        distanceBetween(left.dragged.point, left.target.point) -
+          distanceBetween(right.dragged.point, right.target.point),
+    )[0] ?? null;
+}
+
 function addOccupiedHalf(
   occupied: Map<string, Set<DominoHalf>>,
   dominoId: string,
@@ -256,6 +319,16 @@ function addOccupiedHalf(
   const halves = occupied.get(dominoId) ?? new Set<DominoHalf>();
   halves.add(half);
   occupied.set(dominoId, halves);
+}
+
+function addOccupiedBroadSide(
+  occupied: Map<string, Set<Side>>,
+  dominoId: string,
+  side: Side,
+): void {
+  const sides = occupied.get(dominoId) ?? new Set<Side>();
+  sides.add(side);
+  occupied.set(dominoId, sides);
 }
 
 function collides(state: BoardState, dragged: Domino, snappedPosition: Point): boolean {

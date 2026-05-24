@@ -278,6 +278,34 @@ describe("snap candidate detection", () => {
     expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
+  it("does not offer the second half on an already occupied broad side", () => {
+    const target = matchingTarget(90, "a");
+    const linkedSlot = { half: "b", side: "right" } as const;
+    const firstTargetSlot = { half: "a", side: "left" } as const;
+    const secondTargetSlot = { half: "b", side: "left" } as const;
+    const draggedSlot = { half: "b", side: "right" } as const;
+    const linked = domino({
+      id: "linked",
+      ...snapPositionForSlots(domino({ id: "linked" }), linkedSlot, target, firstTargetSlot),
+    });
+    const snappedPosition = snapPositionForSlots(
+      matchingDragged(0, draggedSlot.half),
+      draggedSlot,
+      target,
+      secondTargetSlot,
+    );
+    const state: BoardState = {
+      dominoes: [
+        matchingDragged(0, draggedSlot.half, near(snappedPosition)),
+        target,
+        linked,
+      ],
+      links: [{ dominoId1: "linked", half1: "b", dominoId2: "target", half2: "a" }],
+    };
+
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
+  });
+
   it("rejects a snap placement that would collide with another domino", () => {
     const target = matchingTarget(90, "a");
     const targetSlot = { half: "a", side: "top" } as const;
