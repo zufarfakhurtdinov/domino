@@ -247,28 +247,50 @@ span.domino-content-image-frame {
 .zoom-button {
   width: 52px;
   height: 52px;
-  border: 0;
+  border: 1px solid #d8cdb7;
   border-radius: 16px;
   padding: 0;
   display: grid;
   place-items: center;
-  background: rgba(17, 24, 39, 0.9);
-  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.22);
-  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(238, 231, 216, 0.95)),
+    #eee7d8;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 20px rgba(42, 55, 60, 0.22);
+  color: #4f666d;
   cursor: pointer;
   touch-action: manipulation;
 }
 
 .zoom-button:hover:not(:disabled) {
-  background: #2563eb;
+  border-color: #8ea0a4;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(246, 240, 228, 1)),
+    #f8f2e6;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 14px 24px rgba(42, 55, 60, 0.28);
+  color: #27313a;
 }
 
 .zoom-button:active:not(:disabled) {
-  transform: scale(0.94);
+  border-color: #c8bcaa;
+  background:
+    linear-gradient(180deg, rgba(226, 216, 199, 0.95), rgba(238, 231, 216, 1)),
+    #e8decc;
+  box-shadow:
+    0 2px 4px rgba(39, 49, 58, 0.18) inset,
+    0 1px 3px rgba(39, 49, 58, 0.16);
+  color: #27313a;
+  transform: scale(0.95);
 }
 
 .zoom-button:disabled {
-  background: rgba(148, 163, 184, 0.92);
+  border-color: rgba(200, 188, 170, 0.8);
+  background: rgba(238, 231, 216, 0.68);
+  box-shadow: none;
+  color: rgba(79, 102, 109, 0.48);
   cursor: default;
 }
 
