@@ -34,6 +34,6 @@ test("places add row and export controls below the table aligned with item 1", a
   expect(exportBox).not.toBeNull();
   expect(addRowBox!.x).toBeCloseTo(itemOneBox!.x, 0);
   expect(addRowBox!.y).toBeGreaterThan(itemOneBox!.y);
-  expect(exportBox!.x).toBeGreaterThan(addRowBox!.x + addRowBox!.width);
+  expect(exportBox!.x).toBeCloseTo(addRowBox!.x + addRowBox!.width + 8, 0);
   expect(exportBox!.y).toBeCloseTo(addRowBox!.y, 0);
 });
