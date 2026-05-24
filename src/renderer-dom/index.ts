@@ -68,10 +68,12 @@ export class DomRenderer {
         halfElement.style.top = `${half.y}px`;
         halfElement.style.width = `${half.width}px`;
         halfElement.style.height = `${half.height}px`;
-        halfElement.style.background = half.fill;
         halfElement.append(renderContent(half.content));
         element.append(halfElement);
       });
+      const divider = document.createElement("div");
+      divider.className = "domino-divider";
+      element.append(divider);
 
       this.surface.append(element);
     }
@@ -128,11 +130,14 @@ function renderContent(content: Content): Node {
   }
 
   if (content.type === "image") {
+    const frame = document.createElement("span");
+    frame.className = "domino-content-image-frame";
     const image = document.createElement("img");
     image.className = "domino-content-image";
     image.src = content.url;
     image.alt = "";
-    return image;
+    frame.append(image);
+    return frame;
   }
 
   const button = document.createElement("button");

@@ -3,7 +3,7 @@ body {
   margin: 0;
   width: 100%;
   height: 100%;
-  background: #e5e7eb;
+  background: #697f84;
   font-family: Arial, sans-serif;
   overflow: hidden;
 }
@@ -30,7 +30,12 @@ body {
 .board-surface {
   position: absolute;
   inset: 0 auto auto 0;
-  background: #ffffff;
+  background-color: #697f84;
+  background-image:
+    linear-gradient(rgba(142, 160, 164, 0.24) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(81, 102, 107, 0.22) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(238, 231, 216, 0.08) 12%, transparent 12%);
+  background-size: 28px 28px, 28px 28px, 36px 36px;
   transform-origin: top left;
 }
 
@@ -42,6 +47,15 @@ body {
 .domino-card {
   position: absolute;
   transform-origin: top left;
+  border: 1.5px solid #d6cdbd;
+  border-radius: 10px;
+  background-color: #eee7d8;
+  box-shadow:
+    0 3px 0 rgba(214, 205, 189, 0.9) inset,
+    0 -2px 0 rgba(152, 139, 118, 0.16) inset,
+    2px 4px 10px rgba(39, 49, 58, 0.2);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .domino-half {
@@ -49,16 +63,40 @@ body {
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  color: #111827;
+  color: #27313a;
   font-size: 20px;
   text-align: center;
   cursor: inherit;
   user-select: none;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.domino-divider {
+  position: absolute;
+  left: calc(50% - 0.75px);
+  top: 9px;
+  width: 1.5px;
+  height: calc(100% - 18px);
+  border-radius: 999px;
+  background: #b8ae9e;
+  pointer-events: none;
+}
+
+.domino-content-image-frame {
+  box-sizing: border-box;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  border: 1px solid #d9d0c0;
+  border-radius: 7px;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.36);
 }
 
 .domino-content-image {
-  max-width: calc(100% - 20px);
-  max-height: calc(100% - 20px);
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   pointer-events: none;
 }
@@ -66,21 +104,22 @@ body {
 .domino-audio-button {
   width: 42px;
   height: 42px;
-  border: 2px solid #ffffff;
+  border: 2px solid #eee7d8;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #111827;
+  background: #27313a;
   color: #ffffff;
+  box-shadow: 0 2px 5px rgba(39, 49, 58, 0.24);
   cursor: pointer;
 }
 
 .domino-audio-button:hover {
-  background: #2563eb;
+  background: #384550;
 }
 
 .domino-audio-button:active {
-  background: #1d4ed8;
+  background: #1f2932;
   transform: scale(0.94);
 }
 
@@ -92,15 +131,15 @@ body {
 }
 
 .domino-audio-button-svg circle {
-  fill: #111827;
+  fill: #27313a;
 }
 
 .domino-audio-button-svg:hover circle {
-  fill: #2563eb;
+  fill: #384550;
 }
 
 .domino-audio-button-svg:active circle {
-  fill: #1d4ed8;
+  fill: #1f2932;
 }
 
 .domino-half[data-half="a"] {
@@ -122,7 +161,7 @@ body {
   left: 4px;
   top: 4px;
   box-sizing: border-box;
-  border: 4px dashed #16a34a;
+  border: 3px dashed #6f8f8b;
   border-radius: 8px;
   pointer-events: none;
 }

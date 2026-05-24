@@ -11,6 +11,20 @@ type SvgRendererCallbacks = {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+const THEME = {
+  boardFill: "#697f84",
+  boardFiber: "#8ea0a4",
+  boardFiberDark: "#51666b",
+  tileFill: "#eee7d8",
+  tileStroke: "#d6cdbd",
+  tileInsetFill: "rgba(255, 255, 255, 0.24)",
+  tileInsetStroke: "#d9d0c0",
+  contentFill: "#27313a",
+  dividerFill: "#b8ae9e",
+  accentFill: "#6f8f8b",
+  shadowFill: "rgba(39, 49, 58, 0.2)",
+};
+
 export class SvgRenderer {
   private readonly svg: SVGSVGElement;
 
@@ -39,6 +53,7 @@ export class SvgRenderer {
     this.svg.setAttribute("width", String(width));
     this.svg.setAttribute("height", String(height));
     this.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    this.svg.append(createFeltDefs());
 
     const boardGroup = createSvgElement("g");
     boardGroup.setAttribute("transform", `scale(${scale})`);
@@ -50,7 +65,8 @@ export class SvgRenderer {
         y: 0,
         width: view.rect.width,
         height: view.rect.height,
-        fill: "#ffffff",
+        fill: "url(#domino-felt-pattern)",
+        className: "board-background",
       }),
     );
 
@@ -64,6 +80,8 @@ export class SvgRenderer {
         this.callbacks.onDominoPointerDown(domino.id, this.getLocalPoint(event));
       });
 
+      group.append(createDominoShadow(domino.width, domino.height));
+      group.append(createDominoBase(domino.width, domino.height));
       domino.halves.forEach((half) => {
         group.append(
           createHalfPath({
@@ -72,12 +90,13 @@ export class SvgRenderer {
             y: half.y,
             width: half.width,
             height: half.height,
-            fill: half.fill,
+            fill: THEME.tileInsetFill,
           }),
         );
 
         group.append(createContentElement(half.content, half.x, half.y, half.width, half.height));
       });
+      group.append(createDivider(domino.width, domino.height));
 
       boardGroup.append(group);
     }
@@ -96,11 +115,11 @@ export class SvgRenderer {
           width: view.snapHighlight.width,
           height: view.snapHighlight.height,
           fill: "none",
-          stroke: "#16a34a",
-          strokeWidth: 4,
+          stroke: THEME.accentFill,
+          strokeWidth: 3,
           rx: 8,
           ry: 8,
-          strokeDasharray: "8 5",
+          strokeDasharray: "7 5",
         }),
       );
       boardGroup.append(highlight);
@@ -122,7 +141,7 @@ export class SvgRenderer {
           cx: "0",
           cy: "0",
           r: "13",
-          fill: "#dbeafe",
+      fill: "#dbeafe",
           stroke: "#ffffff",
           "stroke-width": "2",
         }),
@@ -160,20 +179,40 @@ function createContentElement(content: Content, x: number, y: number, width: num
       width: width - 24,
       height,
       text: content.value,
-      fill: "#111827",
+      fill: THEME.contentFill,
       fontSize: 20,
     });
   }
 
   if (content.type === "image") {
-    return createSvgElement("image", {
-      x: String(x + 10),
-      y: String(y + 10),
-      width: String(width - 20),
-      height: String(height - 20),
+    const group = createSvgElement("g");
+    const frameInset = 8;
+    const imageInset = 12;
+    group.append(
+      createRect({
+        x: x + frameInset,
+        y: y + frameInset,
+        width: width - frameInset * 2,
+        height: height - frameInset * 2,
+        fill: "rgba(255, 255, 255, 0.36)",
+        stroke: THEME.tileInsetStroke,
+        strokeWidth: 1,
+        rx: 7,
+        ry: 7,
+        className: "domino-content-image-frame",
+      }),
+    );
+    const image = createSvgElement("image", {
+      x: String(x + imageInset),
+      y: String(y + imageInset),
+      width: String(width - imageInset * 2),
+      height: String(height - imageInset * 2),
       href: content.url,
       preserveAspectRatio: "xMidYMid meet",
     });
+    image.classList.add("domino-content-image");
+    group.append(image);
+    return group;
   }
 
   const button = createSvgElement("g", {
@@ -190,7 +229,17 @@ function createContentElement(content: Content, x: number, y: number, width: num
     event.stopPropagation();
     void new Audio(content.url).play();
   });
-  button.append(createSvgElement("circle", { cx: "0", cy: "0", r: "18" }));
+  button.append(
+    createSvgElement("circle", {
+      cx: "0",
+      cy: "0",
+      r: "18",
+      fill: THEME.contentFill,
+      stroke: THEME.tileFill,
+      "stroke-width": "2",
+      class: "domino-audio-button-ring",
+    }),
+  );
   button.append(
     createSvgElement("path", {
       d: "M-5 -9v18a1 1 0 0 0 1.524 .852l14.5 -9a1 1 0 0 0 0 -1.704l-14.5 -9a1 1 0 0 0 -1.524 .852z",
@@ -198,6 +247,63 @@ function createContentElement(content: Content, x: number, y: number, width: num
     }),
   );
   return button;
+}
+
+function createFeltDefs(): SVGElement {
+  const defs = createSvgElement("defs");
+  const pattern = createSvgElement("pattern", {
+    id: "domino-felt-pattern",
+    width: "28",
+    height: "28",
+    patternUnits: "userSpaceOnUse",
+  });
+  pattern.append(createRect({ x: 0, y: 0, width: 28, height: 28, fill: THEME.boardFill }));
+  pattern.append(createSvgElement("path", { d: "M0 7H28 M0 21H28", stroke: THEME.boardFiber, "stroke-width": "0.55", opacity: "0.35" }));
+  pattern.append(createSvgElement("path", { d: "M7 0V28 M21 0V28", stroke: THEME.boardFiberDark, "stroke-width": "0.45", opacity: "0.24" }));
+  pattern.append(createSvgElement("path", { d: "M-4 28L28 -4 M0 32L32 0", stroke: THEME.boardFiber, "stroke-width": "0.35", opacity: "0.18" }));
+  defs.append(pattern);
+  return defs;
+}
+
+function createDominoShadow(width: number, height: number): SVGElement {
+  return createRect({
+    x: 2,
+    y: 3,
+    width,
+    height,
+    fill: THEME.shadowFill,
+    rx: 10,
+    ry: 10,
+    className: "domino-tile-shadow",
+  });
+}
+
+function createDominoBase(width: number, height: number): SVGElement {
+  return createRect({
+    x: 0,
+    y: 0,
+    width,
+    height,
+    fill: THEME.tileFill,
+    stroke: THEME.tileStroke,
+    strokeWidth: 1.5,
+    rx: 10,
+    ry: 10,
+    className: "domino-tile-base",
+  });
+}
+
+function createDivider(width: number, height: number): SVGElement {
+  return createRect({
+    x: width / 2 - 0.75,
+    y: 9,
+    width: 1.5,
+    height: height - 18,
+    fill: THEME.dividerFill,
+    rx: 1,
+    ry: 1,
+    className: "domino-divider",
+  });
 }
 
 function createSvgElement<K extends keyof SVGElementTagNameMap>(
@@ -247,10 +353,12 @@ function createHalfPath(config: {
           "Z",
         ].join(" ");
 
-  return createSvgElement("path", {
+  const path = createSvgElement("path", {
     d,
     fill: config.fill,
   });
+  path.classList.add("domino-half-surface");
+  return path;
 }
 
 function createRect(config: {
@@ -264,8 +372,9 @@ function createRect(config: {
   rx?: number;
   ry?: number;
   strokeDasharray?: string;
+  className?: string;
 }) {
-  return createSvgElement("rect", {
+  const rect = createSvgElement("rect", {
     x: String(config.x),
     y: String(config.y),
     width: String(config.width),
@@ -277,6 +386,10 @@ function createRect(config: {
     ...(config.ry ? { ry: String(config.ry) } : {}),
     ...(config.strokeDasharray ? { "stroke-dasharray": config.strokeDasharray } : {}),
   });
+  if (config.className) {
+    rect.classList.add(config.className);
+  }
+  return rect;
 }
 
 function createText(config: {
