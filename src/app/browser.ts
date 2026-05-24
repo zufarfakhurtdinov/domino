@@ -212,43 +212,51 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   }
 
   function createImportZipButton(): HTMLButtonElement {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "zoom-button top-action-button import-activity";
-    button.setAttribute("aria-label", "Import activity");
-    button.title = "Import activity";
-    button.innerHTML = createImportIcon();
-    button.addEventListener("click", () => {
-      void importActivityZip();
+    return createTopActionButton({
+      className: "import-activity",
+      label: "Import activity",
+      icon: createImportIcon(),
+      onClick: () => {
+        void importActivityZip();
+      },
     });
-
-    return button;
   }
 
   function createImportDirectoryButton(): HTMLButtonElement {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "zoom-button top-action-button import-activity-directory";
-    button.setAttribute("aria-label", "Import activity folder");
-    button.title = "Import activity folder";
-    button.innerHTML = createImportFolderIcon();
-    button.addEventListener("click", () => {
-      void importActivityDirectory();
+    return createTopActionButton({
+      className: "import-activity-directory",
+      label: "Import activity folder",
+      icon: createImportFolderIcon(),
+      onClick: () => {
+        void importActivityDirectory();
+      },
     });
-
-    return button;
   }
 
   function createEditorButton(): HTMLButtonElement {
+    return createTopActionButton({
+      className: "open-editor",
+      label: "Open editor",
+      icon: createEditIcon(),
+      onClick: () => {
+        window.location.href = `${window.location.pathname}?mode=editor`;
+      },
+    });
+  }
+
+  function createTopActionButton(config: {
+    className: string;
+    label: string;
+    icon: string;
+    onClick: () => void;
+  }): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "zoom-button top-action-button open-editor";
-    button.setAttribute("aria-label", "Open editor");
-    button.title = "Open editor";
-    button.innerHTML = createEditIcon();
-    button.addEventListener("click", () => {
-      window.location.href = `${window.location.pathname}?mode=editor`;
-    });
+    button.className = `zoom-button top-action-button ${config.className}`;
+    button.setAttribute("aria-label", config.label);
+    button.title = config.label;
+    button.innerHTML = config.icon;
+    button.addEventListener("click", config.onClick);
 
     return button;
   }
@@ -285,27 +293,34 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   }
 
   function selectActivityZip(): Promise<File | null> {
-    return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ".zip,application/zip";
-      input.addEventListener(
-        "change",
-        () => {
-          resolve(input.files?.[0] ?? null);
-        },
-        { once: true },
-      );
-      input.click();
-    });
+    return selectFiles({ accept: ".zip,application/zip" }).then((files) => files?.[0] ?? null);
   }
 
   function selectActivityDirectory(): Promise<FileList | null> {
+    return selectFiles({ directory: true, multiple: true });
+  }
+
+  function selectFiles(config: {
+    accept?: string;
+    directory?: boolean;
+    multiple?: boolean;
+  }): Promise<FileList | null> {
     return new Promise((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
-      input.multiple = true;
-      input.webkitdirectory = true;
+
+      if (config.accept) {
+        input.accept = config.accept;
+      }
+
+      if (config.multiple) {
+        input.multiple = true;
+      }
+
+      if (config.directory) {
+        input.webkitdirectory = true;
+      }
+
       input.addEventListener(
         "change",
         () => {
