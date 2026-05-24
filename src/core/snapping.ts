@@ -7,7 +7,7 @@ import {
   SNAP_GAP,
 } from "./geometry";
 import { getConnectedDominoIds } from "./connections";
-import type { BoardState, Domino, DominoHalf, Link, Pair, Point, Rect, SnapCandidate } from "./types";
+import type { BoardState, Domino, DominoHalf, Link, Point, Rect, SnapCandidate } from "./types";
 
 export type SnapOptions = {
   threshold: number;
@@ -16,7 +16,6 @@ export type SnapOptions = {
 export function findSnapCandidate(
   state: BoardState,
   draggedDominoId: string,
-  _pairs: Pair[],
   options: SnapOptions,
 ): SnapCandidate | null {
   const dragged = state.dominoes.find((domino) => domino.id === draggedDominoId);

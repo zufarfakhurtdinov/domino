@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { pairs } from "../../src/app/model";
 import { findSnapCandidate } from "../../src/core/snapping";
 import {
   getDominoBounds,
@@ -120,7 +119,7 @@ test("dom snap highlight is inset inside the final rotated drop position", async
   const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
   const dragged = stateBefore.dominoes.find((domino) => domino.id === "dragged");
   expect(dragged).toBeDefined();
-  const candidate = findSnapCandidate(stateBefore, "dragged", pairs, { threshold: 10 });
+  const candidate = findSnapCandidate(stateBefore, "dragged", { threshold: 10 });
   expect(candidate).not.toBeNull();
 
   const appBox = await page.locator("#app").boundingBox();

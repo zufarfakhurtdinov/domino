@@ -7,7 +7,7 @@ import {
   HALF_WIDTH,
   SNAP_GAP,
 } from "../src/core/geometry";
-import type { BoardState, Domino, DominoHalf, Pair, Point, Rect, Rotation } from "../src/core/types";
+import type { BoardState, Domino, DominoHalf, Point, Rect, Rotation } from "../src/core/types";
 import { board, content, domino } from "./core.fixtures";
 
 type Side = "top" | "right" | "bottom" | "left";
@@ -26,7 +26,6 @@ type SlotPairCase = {
   snappedPosition: Point;
 };
 
-const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
 const rotations = [0, 90, 180, 270] as const;
 const sides = ["top", "right", "bottom", "left"] as const;
 const snapProbeOffset = { x: 0.75, y: 0.5 };
@@ -93,7 +92,7 @@ describe("snap candidate detection", () => {
         y: snappedPosition.y + snapProbeOffset.y,
       });
 
-      expect(findSnapCandidate(board([dragged, target]), "dragged", pairs, { threshold: 0.25 })).toMatchObject({
+      expect(findSnapCandidate(board([dragged, target]), "dragged", { threshold: 0.25 })).toMatchObject({
         draggedDominoId: "dragged",
         draggedHalf: draggedSlot.half,
         targetDominoId: "target",
@@ -118,7 +117,7 @@ describe("snap candidate detection", () => {
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("does not snap vertical dominoes through side slots", () => {
@@ -136,13 +135,13 @@ describe("snap candidate detection", () => {
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("returns null when there are no other dominoes", () => {
     const state = board([domino({ id: "dragged", a: content("cat_en") })]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("snaps nearby exposed slots without requiring a configured pair", () => {
@@ -160,7 +159,7 @@ describe("snap candidate detection", () => {
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", [], { threshold: 0.5 })).toMatchObject({
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toMatchObject({
       draggedDominoId: "dragged",
       draggedHalf: "a",
       targetDominoId: "target",
@@ -187,7 +186,7 @@ describe("snap candidate detection", () => {
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("does not offer another slot on a half that already has a link", () => {
@@ -215,7 +214,7 @@ describe("snap candidate detection", () => {
       links: [{ dominoId1: "target", half1: "a", dominoId2: "linked-to-target-a", half2: "b" }],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("still offers a slot on the other half when one half already has a link", () => {
@@ -243,7 +242,7 @@ describe("snap candidate detection", () => {
       links: [{ dominoId1: "target", half1: "a", dominoId2: "linked-to-target-a", half2: "b" }],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toMatchObject({
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toMatchObject({
       draggedHalf: "b",
       targetHalf: "b",
       snappedPosition,
@@ -276,7 +275,7 @@ describe("snap candidate detection", () => {
       links: [{ dominoId1: "dragged", half1: "a", dominoId2: "linked-to-dragged-a", half2: "b" }],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("rejects a snap placement that would collide with another domino", () => {
@@ -295,7 +294,7 @@ describe("snap candidate detection", () => {
       domino({ id: "blocker", x: snappedPosition.x, y: snappedPosition.y }),
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("does not propose a snap to another domino in the dragged group", () => {
@@ -316,7 +315,7 @@ describe("snap candidate detection", () => {
       links: [{ dominoId1: "dragged", half1: "b", dominoId2: "linked-target", half2: "b" }],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })).toBeNull();
   });
 
   it("chooses the closest candidate", () => {
@@ -336,7 +335,7 @@ describe("snap candidate detection", () => {
       nearTarget,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })?.targetDominoId).toBe(
       "target-near",
     );
   });
@@ -360,7 +359,7 @@ describe("snap candidate detection", () => {
       links: [],
     };
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })?.targetDominoId).toBe(
+    expect(findSnapCandidate(state, "dragged", { threshold: 0.5 })?.targetDominoId).toBe(
       "a-target",
     );
   });

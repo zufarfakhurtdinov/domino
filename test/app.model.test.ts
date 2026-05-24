@@ -52,7 +52,7 @@ describe("app model fixtures", () => {
     oneFive!.x = snapPosition.x - 8;
     oneFive!.y = snapPosition.y + 8;
 
-    expect(findSnapCandidate(state, "one-five", pairs, { threshold: 0.5 })).toMatchObject({
+    expect(findSnapCandidate(state, "one-five", { threshold: 0.5 })).toMatchObject({
       draggedDominoId: "one-five",
       draggedHalf: "b",
       targetDominoId: "four-five",
@@ -75,7 +75,7 @@ describe("app model fixtures", () => {
     fourFive!.x = snapPosition.x + 8;
     fourFive!.y = snapPosition.y + 8;
 
-    expect(findSnapCandidate(state, "four-five", pairs, { threshold: 0.5 })).toMatchObject({
+    expect(findSnapCandidate(state, "four-five", { threshold: 0.5 })).toMatchObject({
       draggedDominoId: "four-five",
       draggedHalf: "b",
       targetDominoId: "one-five",

@@ -1,10 +1,9 @@
 import { DOMINO_WIDTH, HALF_HEIGHT, HALF_WIDTH, SNAP_GAP } from "../src/core/geometry";
-import type { BoardState, Pair } from "../src/core/types";
+import type { BoardState } from "../src/core/types";
 import { DEFAULT_BOARD_METRICS } from "../src/view/metrics";
 import { derivePreviewResult } from "../src/view/interaction";
 import { board, content, domino } from "./core.fixtures";
 
-const pairs: Pair[] = [{ a: "cat_en", b: "cat_img" }];
 const nearSlotSnap = {
   x: HALF_HEIGHT + SNAP_GAP - 0.8,
   y: 0.6,
@@ -25,7 +24,6 @@ describe("view interaction", () => {
       state,
       "dragged",
       { ...nearSlotSnap, rotation: 0 },
-      pairs,
       0.5,
       DEFAULT_BOARD_METRICS,
     );
@@ -69,7 +67,6 @@ describe("view interaction", () => {
       state,
       "dragged",
       { ...draggedDestination, rotation: 0 },
-      [],
       0.5,
       DEFAULT_BOARD_METRICS,
     );

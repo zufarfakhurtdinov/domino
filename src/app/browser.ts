@@ -1,9 +1,9 @@
 import { commitDrop, commitPreviewDrop, detachFirstLink, SNAP_THRESHOLD } from "./actions";
-import { createFixtureBoard, pairs } from "./model";
+import { createFixtureBoard } from "./model";
 import { generateBoardFromActivity } from "../activity/generate-board";
 import { loadActivityZip } from "../activity/load-zip";
 import { detachDomino, rotateDomino } from "../core/board";
-import type { BoardState, Link, Pair, Point, SnapCandidate } from "../core/types";
+import type { BoardState, Link, Point, SnapCandidate } from "../core/types";
 import { createBoardView } from "../view/board-view";
 import { derivePreviewResult } from "../view/interaction";
 import { clampBoardScale, DEFAULT_BOARD_METRICS } from "../view/metrics";
@@ -44,7 +44,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   let stageHeight = 0;
   let boardScale = 1;
   let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
-  let currentPairs: Pair[] = pairs;
   let previewState: BoardState | null = null;
   let currentSnapCandidate: SnapCandidate | null = null;
   let dragSession: DragSession | null = null;
@@ -85,7 +84,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
           y: pointer.y - session.offset.y,
           rotation: domino.rotation,
         },
-        currentPairs,
         SNAP_THRESHOLD,
         DEFAULT_BOARD_METRICS,
       );
@@ -136,7 +134,7 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
       render();
     },
     drop: (dominoId, visualState) => {
-      state = commitDrop(state, dominoId, visualState, currentPairs, DEFAULT_BOARD_METRICS);
+      state = commitDrop(state, dominoId, visualState, DEFAULT_BOARD_METRICS);
       resetPreview();
       render();
     },
@@ -252,7 +250,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
       rotation: "1",
     });
     state = generated.state;
-    currentPairs = generated.pairs;
     resetPreview();
     render();
   }

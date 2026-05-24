@@ -1,7 +1,7 @@
 import { detachDomino } from "../core/board";
 import { moveConnectedGroup } from "../core/connections";
 import { applySnap } from "../core/snapping";
-import type { BoardState, Pair, SnapCandidate } from "../core/types";
+import type { BoardState, SnapCandidate } from "../core/types";
 import { derivePreviewResult } from "../view/interaction";
 import type { BoardMetrics, DragVisualState } from "../view/types";
 
@@ -11,14 +11,12 @@ export function commitDrop(
   state: BoardState,
   dominoId: string,
   visualState: DragVisualState,
-  pairs: Pair[],
   metrics: BoardMetrics,
 ): BoardState {
   const result = derivePreviewResult(
     state,
     dominoId,
     visualState,
-    pairs,
     SNAP_THRESHOLD,
     metrics,
   );

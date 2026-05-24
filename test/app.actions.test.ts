@@ -26,7 +26,6 @@ describe("app actions", () => {
         state,
         "dragged",
         { ...draggedDestination, rotation: 0 },
-        [],
         DEFAULT_BOARD_METRICS,
       ).dominoes,
     ).toEqual([
@@ -67,7 +66,6 @@ describe("app actions", () => {
       state,
       "dragged",
       { ...dropPosition, rotation: 0 },
-      [{ a: "cat_en", b: "cat_img" }],
       DEFAULT_BOARD_METRICS,
     );
 
