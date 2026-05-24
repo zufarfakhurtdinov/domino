@@ -112,8 +112,8 @@ body {
   height: 26px;
   border: 2px solid #ffffff;
   border-radius: 999px;
-  background: #dc2626;
-  color: #ffffff;
+  background: #dbeafe;
+  color: #1e3a8a;
   font-size: 14px;
   font-weight: 700;
   display: grid;
@@ -122,23 +122,23 @@ body {
 }
 
 .domino-detach-control:hover {
-  background: #ef4444;
+  background: #bfdbfe;
 }
 
 .domino-detach-control:active {
-  background: #b91c1c;
+  background: #93c5fd;
 }
 
 [data-role="detach-control"] circle {
-  fill: #dc2626;
+  fill: #dbeafe;
 }
 
 [data-role="detach-control"]:hover circle {
-  fill: #ef4444;
+  fill: #bfdbfe;
 }
 
 [data-role="detach-control"]:active circle {
-  fill: #b91c1c;
+  fill: #93c5fd;
 }
 
 .zoom-controls {
