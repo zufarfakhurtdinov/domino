@@ -23,7 +23,7 @@ const THEME = {
   tileInsetStroke: "#d9d0c0",
   contentFill: "#27313a",
   dividerFill: "#b8ae9e",
-  accentFill: "#6f8f8b",
+  accentFill: "#f59e0b",
   shadowFill: "rgba(39, 49, 58, 0.2)",
 };
 
