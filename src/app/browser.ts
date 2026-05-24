@@ -377,9 +377,14 @@ function createImportIcon(): string {
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-      <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5" />
-      <path d="M2 19h7" />
-      <path d="M5 16l-3 3l3 3" />
+      <path d="M6 20.735a2 2 0 0 1 -1 -1.735v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-1" />
+      <path d="M11 17a2 2 0 0 1 2 2v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a2 2 0 0 1 2 -2" />
+      <path d="M11 5l-1 0" />
+      <path d="M13 7l-1 0" />
+      <path d="M11 9l-1 0" />
+      <path d="M13 11l-1 0" />
+      <path d="M11 13l-1 0" />
+      <path d="M13 15l-1 0" />
     </svg>
   `;
 }
@@ -387,9 +392,7 @@ function createImportIcon(): string {
 function createImportFolderIcon(): string {
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M5 19h14a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-7l-2 -2h-5a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2z" />
-      <path d="M12 11v6" />
-      <path d="M9 14l3 3l3 -3" />
+      <path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" />
     </svg>
   `;
 }
