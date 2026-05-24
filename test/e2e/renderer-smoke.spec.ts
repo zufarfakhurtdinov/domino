@@ -15,6 +15,9 @@ test("renders the default SVG board", async ({ page }) => {
     "four-five",
     "one-five",
     "three-seven",
+    "style-numbers",
+    "style-image",
+    "style-audio",
   ]);
 });
 

@@ -4,6 +4,9 @@ body {
   width: 100%;
   height: 100%;
   background: #697f84;
+  background-image: url("./assets/blue-gray-felt-background-1440-q82.webp");
+  background-size: cover;
+  background-position: center;
   font-family: Arial, sans-serif;
   overflow: hidden;
 }
@@ -31,11 +34,9 @@ body {
   position: absolute;
   inset: 0 auto auto 0;
   background-color: #697f84;
-  background-image:
-    linear-gradient(rgba(142, 160, 164, 0.24) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(81, 102, 107, 0.22) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(238, 231, 216, 0.08) 12%, transparent 12%);
-  background-size: 28px 28px, 28px 28px, 36px 36px;
+  background-image: url("./assets/blue-gray-felt-background-1440-q82.webp");
+  background-size: cover;
+  background-position: center;
   transform-origin: top left;
 }
 
@@ -71,7 +72,7 @@ body {
   background: rgba(255, 255, 255, 0.24);
 }
 
-.domino-divider {
+.domino-card > .domino-divider {
   position: absolute;
   left: calc(50% - 0.75px);
   top: 9px;
@@ -82,7 +83,7 @@ body {
   pointer-events: none;
 }
 
-.domino-content-image-frame {
+span.domino-content-image-frame {
   box-sizing: border-box;
   width: calc(100% - 16px);
   height: calc(100% - 16px);

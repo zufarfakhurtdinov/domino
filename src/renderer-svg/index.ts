@@ -1,6 +1,8 @@
 import type { Content, DominoHalf, Link, Point } from "../core/types";
 import type { BoardView } from "../view/types";
 
+const FELT_BACKGROUND_URL = new URL("../assets/blue-gray-felt-background-1440-q82.webp", import.meta.url).href;
+
 type SvgRendererCallbacks = {
   onDominoPointerDown: (dominoId: string, pointer: Point) => void;
   onPointerMove: (pointer: Point) => void;
@@ -53,22 +55,12 @@ export class SvgRenderer {
     this.svg.setAttribute("width", String(width));
     this.svg.setAttribute("height", String(height));
     this.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    this.svg.append(createFeltDefs());
 
     const boardGroup = createSvgElement("g");
     boardGroup.setAttribute("transform", `scale(${scale})`);
     this.svg.append(boardGroup);
 
-    boardGroup.append(
-      createRect({
-        x: 0,
-        y: 0,
-        width: view.rect.width,
-        height: view.rect.height,
-        fill: "url(#domino-felt-pattern)",
-        className: "board-background",
-      }),
-    );
+    boardGroup.append(createBoardBackground(view.rect.width, view.rect.height));
 
     for (const domino of view.dominoes) {
       const group = createSvgElement("g");
@@ -249,20 +241,17 @@ function createContentElement(content: Content, x: number, y: number, width: num
   return button;
 }
 
-function createFeltDefs(): SVGElement {
-  const defs = createSvgElement("defs");
-  const pattern = createSvgElement("pattern", {
-    id: "domino-felt-pattern",
-    width: "28",
-    height: "28",
-    patternUnits: "userSpaceOnUse",
+function createBoardBackground(width: number, height: number): SVGElement {
+  const image = createSvgElement("image", {
+    x: "0",
+    y: "0",
+    width: String(width),
+    height: String(height),
+    href: FELT_BACKGROUND_URL,
+    preserveAspectRatio: "xMidYMid slice",
   });
-  pattern.append(createRect({ x: 0, y: 0, width: 28, height: 28, fill: THEME.boardFill }));
-  pattern.append(createSvgElement("path", { d: "M0 7H28 M0 21H28", stroke: THEME.boardFiber, "stroke-width": "0.55", opacity: "0.35" }));
-  pattern.append(createSvgElement("path", { d: "M7 0V28 M21 0V28", stroke: THEME.boardFiberDark, "stroke-width": "0.45", opacity: "0.24" }));
-  pattern.append(createSvgElement("path", { d: "M-4 28L28 -4 M0 32L32 0", stroke: THEME.boardFiber, "stroke-width": "0.35", opacity: "0.18" }));
-  defs.append(pattern);
-  return defs;
+  image.classList.add("board-background");
+  return image;
 }
 
 function createDominoShadow(width: number, height: number): SVGElement {

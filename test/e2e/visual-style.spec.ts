@@ -6,7 +6,8 @@ test("svg renderer uses the ivory ceramic and blue-gray felt style", async ({ pa
   await page.goto("/domino/?fixture=basic&renderer=svg");
 
   await expect(page.locator(".board-svg")).toBeVisible();
-  await expect(page.locator(".board-background")).toHaveAttribute("fill", "url(#domino-felt-pattern)");
+  await expect(page.locator(".board-background")).toHaveAttribute("href", /blue-gray-felt-background/);
+  await expect(page.locator(".board-background")).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
   await expect(page.locator("[data-domino-id='cat'] .domino-tile-base")).toHaveCount(1);
   await expect(page.locator("[data-domino-id='cat'] .domino-half-surface")).toHaveCount(2);
   await expect(page.locator("[data-domino-id='cat'] .domino-divider")).toHaveCount(1);

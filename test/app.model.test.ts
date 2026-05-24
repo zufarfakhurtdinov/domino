@@ -4,12 +4,12 @@ import { findSnapCandidate } from "../src/core/snapping";
 import { createFixtureBoard, pairs } from "../src/app/model";
 
 describe("app model fixtures", () => {
-  it("builds the default demo as six horizontal word dominoes", () => {
+  it("builds the default demo with original word dominoes and style preview dominoes", () => {
     const state = createFixtureBoard(null);
 
     expect(state.links).toEqual([]);
     expect(
-      state.dominoes.map((domino) => [
+      state.dominoes.slice(0, 6).map((domino) => [
         domino.a.content.type === "text" ? domino.a.content.value : "",
         domino.b.content.type === "text" ? domino.b.content.value : "",
       ]),
@@ -21,7 +21,18 @@ describe("app model fixtures", () => {
       ["one (1)", "five (5)"],
       ["three (3)", "seven (7)"],
     ]);
-    expect(state.dominoes.map((domino) => domino.rotation)).toEqual([0, 90, 0, 90, 0, 90]);
+    expect(state.dominoes.slice(0, 6).map((domino) => domino.rotation)).toEqual([0, 90, 0, 90, 0, 90]);
+    expect(state.dominoes.slice(6).map((domino) => domino.id)).toEqual([
+      "style-numbers",
+      "style-image",
+      "style-audio",
+    ]);
+    expect(state.dominoes[6].a.content).toEqual({ type: "text", value: "three" });
+    expect(state.dominoes[6].b.content).toEqual({ type: "text", value: "four" });
+    expect(state.dominoes[7].a.content.type).toBe("image");
+    expect(state.dominoes[7].b.content).toEqual({ type: "text", value: "two" });
+    expect(state.dominoes[8].a.content.type).toBe("audio");
+    expect(state.dominoes[8].b.content).toEqual({ type: "text", value: "five" });
   });
 
   it("allows repeated demo words to match by hidden occurrence keys", () => {
