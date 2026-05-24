@@ -190,10 +190,12 @@ body {
   stroke-linejoin: round;
 }
 
-.import-activity {
+.top-actions {
   position: absolute;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 12px;
   z-index: 10;
 }
 

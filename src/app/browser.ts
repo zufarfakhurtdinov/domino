@@ -182,7 +182,7 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   }
 
   function createZoomControls(appContainer: HTMLElement): HTMLDivElement {
-    appContainer.append(createImportButton());
+    appContainer.append(createTopActions());
 
     const controls = document.createElement("div");
     controls.className = "zoom-controls";
@@ -204,15 +204,36 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
     return controls;
   }
 
+  function createTopActions(): HTMLDivElement {
+    const actions = document.createElement("div");
+    actions.className = "top-actions";
+    actions.append(createImportButton(), createEditorButton());
+    return actions;
+  }
+
   function createImportButton(): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "zoom-button import-activity";
+    button.className = "zoom-button top-action-button import-activity";
     button.setAttribute("aria-label", "Import activity");
     button.title = "Import activity";
     button.innerHTML = createImportIcon();
     button.addEventListener("click", () => {
       void importActivityZip();
+    });
+
+    return button;
+  }
+
+  function createEditorButton(): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "zoom-button top-action-button open-editor";
+    button.setAttribute("aria-label", "Open editor");
+    button.title = "Open editor";
+    button.innerHTML = createEditIcon();
+    button.addEventListener("click", () => {
+      window.location.href = `${window.location.pathname}?mode=editor`;
     });
 
     return button;
@@ -300,6 +321,16 @@ function createImportIcon(): string {
       <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5" />
       <path d="M2 19h7" />
       <path d="M5 16l-3 3l3 3" />
+    </svg>
+  `;
+}
+
+function createEditIcon(): string {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+      <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+      <path d="M16 5l3 3" />
     </svg>
   `;
 }
