@@ -2,15 +2,16 @@ import JSZip from "jszip";
 import type { ActivityData, ContentData, LoadedActivity } from "./types";
 import type { Content } from "../core/types";
 
-const ACTIVITY_DIRECTORY = "activity";
-const ACTIVITY_JSON_PATH = `${ACTIVITY_DIRECTORY}/activity.json`;
+const ACTIVITY_JSON_FILE = "activity.json";
 
 export async function loadActivityZip(file: Blob): Promise<LoadedActivity> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const activityFile = zip.file(ACTIVITY_JSON_PATH);
+  const activityBasePath = getActivityBasePath(zip);
+  const activityJsonPath = `${activityBasePath}${ACTIVITY_JSON_FILE}`;
+  const activityFile = zip.file(activityJsonPath);
 
   if (!activityFile) {
-    throw new Error(`Missing ${ACTIVITY_JSON_PATH}.`);
+    throw new Error(`Missing ${activityJsonPath}.`);
   }
 
   const activity = JSON.parse(await activityFile.async("string")) as ActivityData;
@@ -21,20 +22,49 @@ export async function loadActivityZip(file: Blob): Promise<LoadedActivity> {
       activity.pairs.map(async (pair) => ({
         id: pair.id,
         items: [
-          await resolveContent(zip, pair.items[0]),
-          await resolveContent(zip, pair.items[1]),
+          await resolveContent(zip, activityBasePath, pair.items[0]),
+          await resolveContent(zip, activityBasePath, pair.items[1]),
         ] as [Content, Content],
       })),
     ),
   };
 }
 
-async function resolveContent(zip: JSZip, content: ContentData): Promise<Content> {
+function getActivityBasePath(zip: JSZip): string {
+  if (zip.file(ACTIVITY_JSON_FILE)) {
+    return "";
+  }
+
+  const topLevelDirectories = new Set(
+    Object.keys(zip.files)
+      .filter((path) => !isIgnoredZipPath(path))
+      .filter((path) => path.includes("/"))
+      .map((path) => path.split("/")[0])
+      .filter((directory): directory is string => Boolean(directory)),
+  );
+
+  if (topLevelDirectories.size === 1) {
+    const [directory] = Array.from(topLevelDirectories);
+    return `${directory}/`;
+  }
+
+  if (topLevelDirectories.size > 1) {
+    throw new Error("Missing activity.json: zip must contain activity.json at root or inside a single top-level directory.");
+  }
+
+  return "";
+}
+
+function isIgnoredZipPath(path: string): boolean {
+  return path.startsWith("__MACOSX/") || path.split("/").some((part) => part.startsWith("._"));
+}
+
+async function resolveContent(zip: JSZip, activityBasePath: string, content: ContentData): Promise<Content> {
   if (content.type === "text") {
     return { type: "text", value: content.value };
   }
 
-  const path = `${ACTIVITY_DIRECTORY}/${content.src}`;
+  const path = `${activityBasePath}${content.src}`;
   const file = zip.file(path);
 
   if (!file) {

@@ -41,8 +41,70 @@ describe("activity zip loader", () => {
     });
   });
 
+  it("loads activity json from the zip root", async () => {
+    const activity = await loadActivityZip(
+      await createActivityZip({
+        "activity.json": JSON.stringify({
+          title: "activity",
+          pairs: [
+            {
+              id: 1,
+              items: [
+                { type: "text", value: "cat" },
+                { type: "image", src: "cat.png" },
+              ],
+            },
+          ],
+        }),
+        "cat.png": "image",
+      }),
+    );
+
+    expect(activity.pairs[0].items).toEqual([
+      { type: "text", value: "cat" },
+      { type: "image", url: expect.stringMatching(/^blob:/) },
+    ]);
+  });
+
+  it("loads activity json from any single top-level directory and ignores macOS metadata", async () => {
+    const activity = await loadActivityZip(
+      await createActivityZip({
+        "animals-a1/activity.json": JSON.stringify({
+          title: "activity",
+          pairs: [
+            {
+              id: 1,
+              items: [
+                { type: "text", value: "dog" },
+                { type: "audio", src: "dog.mp3" },
+              ],
+            },
+          ],
+        }),
+        "animals-a1/dog.mp3": "audio",
+        "__MACOSX/animals-a1/._activity.json": "metadata",
+      }),
+    );
+
+    expect(activity.pairs[0].items).toEqual([
+      { type: "text", value: "dog" },
+      { type: "audio", url: expect.stringMatching(/^blob:/) },
+    ]);
+  });
+
+  it("rejects ambiguous zips with multiple top-level activity directories", async () => {
+    await expect(
+      loadActivityZip(
+        await createActivityZip({
+          "animals-a1/activity.json": "{}",
+          "animals-a2/activity.json": "{}",
+        }),
+      ),
+    ).rejects.toThrow("single top-level directory");
+  });
+
   it("reports missing activity json and missing referenced media", async () => {
-    await expect(loadActivityZip(await createActivityZip({}))).rejects.toThrow("activity/activity.json");
+    await expect(loadActivityZip(await createActivityZip({}))).rejects.toThrow("activity.json");
 
     await expect(
       loadActivityZip(
