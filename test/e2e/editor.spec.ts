@@ -17,3 +17,23 @@ test("renders the activity editor and enables export after two valid rows", asyn
 
   await expect(exportButton).toBeEnabled();
 });
+
+test("places add row and export controls below the table aligned with item 1", async ({ page }) => {
+  await page.goto("/domino/?mode=editor");
+
+  const itemOneInput = page.locator(".activity-editor-cell[data-row-index='0'][data-item-index='0'] input");
+  const addRowButton = page.getByRole("button", { name: "Add row" });
+  const exportButton = page.getByRole("button", { name: "Export" });
+
+  const itemOneBox = await itemOneInput.boundingBox();
+  const addRowBox = await addRowButton.boundingBox();
+  const exportBox = await exportButton.boundingBox();
+
+  expect(itemOneBox).not.toBeNull();
+  expect(addRowBox).not.toBeNull();
+  expect(exportBox).not.toBeNull();
+  expect(addRowBox!.x).toBeCloseTo(itemOneBox!.x, 0);
+  expect(addRowBox!.y).toBeGreaterThan(itemOneBox!.y);
+  expect(exportBox!.x).toBeGreaterThan(addRowBox!.x + addRowBox!.width);
+  expect(exportBox!.y).toBeCloseTo(addRowBox!.y, 0);
+});
