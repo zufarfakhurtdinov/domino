@@ -7,12 +7,6 @@ export const renderEditorHtml = (pairs: DraftPair[]): string => `
       <h1 id="activity-editor-title">Activity editor</h1>
     </header>
     <div class="activity-editor-table" role="table" aria-label="Activity pairs">
-      <div class="activity-editor-row activity-editor-row-head" role="row">
-        <div role="columnheader">#</div>
-        <div role="columnheader">Item 1</div>
-        <div role="columnheader">Item 2</div>
-        <div role="columnheader">Actions</div>
-      </div>
       ${pairs.map(renderRow).join("")}
     </div>
     <div class="activity-editor-bottom-actions">

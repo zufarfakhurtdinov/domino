@@ -19,6 +19,10 @@ describe("editor view", () => {
     ]);
 
     expect(html).toContain("Activity editor");
+    expect(html).not.toContain('role="columnheader"');
+    expect(html).not.toContain("Item 1");
+    expect(html).not.toContain("Item 2");
+    expect(html).not.toContain("Actions");
     expect(html).toContain('data-row-index="0"');
     expect(html).toContain('data-row-index="1"');
     expect(html).toContain('data-invalid="true"');

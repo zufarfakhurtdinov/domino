@@ -294,13 +294,6 @@ body {
   border-left: 1px solid #e2e8f0;
 }
 
-.activity-editor-row-head > div {
-  background: #e5e7eb;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
 .activity-editor-row[data-invalid="true"] > div {
   background: #fff7f7;
 }
