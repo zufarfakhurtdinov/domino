@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import JSZip from "jszip";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 test("imports an activity zip and renders a generated board", async ({ page }, testInfo) => {
   const zipPath = testInfo.outputPath("activity.zip");
@@ -13,6 +14,28 @@ test("imports an activity zip and renders a generated board", async ({ page }, t
   await page.getByRole("button", { name: "Import activity" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(zipPath);
+
+  await expect.poll(async () => (await page.evaluate(() => window.__DOMINO_TEST__.getState())).dominoes.length).toBe(3);
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.map((domino) => domino.id)).toEqual(["activity-1", "activity-2", "activity-3"]);
+  expect(countBy(state.dominoes.flatMap((domino) => [domino.a.key, domino.b.key]))).toEqual({
+    "1": 2,
+    "2": 2,
+    "3": 2,
+  });
+});
+
+test("imports an unpacked activity directory and renders a generated board", async ({ page }, testInfo) => {
+  const directoryPath = await createActivityDirectory(testInfo.outputPath("activity"));
+
+  await page.goto("/domino/");
+  await expect(page.locator(".board-svg")).toBeVisible();
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import activity folder" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(directoryPath);
 
   await expect.poll(async () => (await page.evaluate(() => window.__DOMINO_TEST__.getState())).dominoes.length).toBe(3);
 
@@ -68,6 +91,25 @@ async function createActivityZip(): Promise<ArrayBuffer> {
   zip.file("activity/dog.mp3", "dog audio");
   zip.file("activity/owl.png", "owl image");
   return zip.generateAsync({ type: "arraybuffer" });
+}
+
+async function createActivityDirectory(directoryPath: string): Promise<string> {
+  await mkdir(directoryPath, { recursive: true });
+  await writeFile(
+    join(directoryPath, "activity.json"),
+    JSON.stringify({
+      title: "activity",
+      pairs: [
+        { id: 1, items: [{ type: "text", value: "cat" }, { type: "image", src: "cat.png" }] },
+        { id: 2, items: [{ type: "text", value: "dog" }, { type: "audio", src: "dog.mp3" }] },
+        { id: 3, items: [{ type: "text", value: "owl" }, { type: "image", src: "owl.png" }] },
+      ],
+    }),
+  );
+  await writeFile(join(directoryPath, "cat.png"), "cat image");
+  await writeFile(join(directoryPath, "dog.mp3"), "dog audio");
+  await writeFile(join(directoryPath, "owl.png"), "owl image");
+  return directoryPath;
 }
 
 function countBy(values: string[]): Record<string, number> {
