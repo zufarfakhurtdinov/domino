@@ -145,7 +145,7 @@ describe("snap candidate detection", () => {
     expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
   });
 
-  it("returns null when nearby halves do not match", () => {
+  it("snaps nearby exposed slots without requiring a configured pair", () => {
     const target = matchingTarget(90, "a");
     const targetSlot = { half: "a", side: "top" } as const;
     const draggedSlot = { half: "a", side: "bottom" } as const;
@@ -160,7 +160,13 @@ describe("snap candidate detection", () => {
       target,
     ]);
 
-    expect(findSnapCandidate(state, "dragged", pairs, { threshold: 0.5 })).toBeNull();
+    expect(findSnapCandidate(state, "dragged", [], { threshold: 0.5 })).toMatchObject({
+      draggedDominoId: "dragged",
+      draggedHalf: "a",
+      targetDominoId: "target",
+      targetHalf: "a",
+      snappedPosition,
+    });
   });
 
   it("returns null when a valid match is outside the magnet threshold", () => {
