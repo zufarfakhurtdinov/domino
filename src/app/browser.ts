@@ -1,7 +1,9 @@
 import { commitDrop, commitPreviewDrop, detachFirstLink, SNAP_THRESHOLD } from "./actions";
 import { createFixtureBoard } from "./model";
 import { generateBoardFromActivity } from "../activity/generate-board";
+import { loadActivityDirectory } from "../activity/load-directory";
 import { loadActivityZip } from "../activity/load-zip";
+import type { LoadedActivity } from "../activity/types";
 import { detachDomino, rotateDomino } from "../core/board";
 import type { BoardState, Link, Point, SnapCandidate } from "../core/types";
 import { createBoardView } from "../view/board-view";
@@ -205,11 +207,11 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   function createTopActions(): HTMLDivElement {
     const actions = document.createElement("div");
     actions.className = "top-actions";
-    actions.append(createImportButton(), createEditorButton());
+    actions.append(createImportZipButton(), createImportDirectoryButton(), createEditorButton());
     return actions;
   }
 
-  function createImportButton(): HTMLButtonElement {
+  function createImportZipButton(): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "zoom-button top-action-button import-activity";
@@ -218,6 +220,20 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
     button.innerHTML = createImportIcon();
     button.addEventListener("click", () => {
       void importActivityZip();
+    });
+
+    return button;
+  }
+
+  function createImportDirectoryButton(): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "zoom-button top-action-button import-activity-directory";
+    button.setAttribute("aria-label", "Import activity folder");
+    button.title = "Import activity folder";
+    button.innerHTML = createImportFolderIcon();
+    button.addEventListener("click", () => {
+      void importActivityDirectory();
     });
 
     return button;
@@ -244,7 +260,21 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
       return;
     }
 
-    const generated = generateBoardFromActivity(await loadActivityZip(file), {
+    loadActivity(await loadActivityZip(file));
+  }
+
+  async function importActivityDirectory(): Promise<void> {
+    const files = await selectActivityDirectory();
+
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    loadActivity(await loadActivityDirectory(files));
+  }
+
+  function loadActivity(activity: LoadedActivity): void {
+    const generated = generateBoardFromActivity(activity, {
       domino: "1",
       layout: "1",
       rotation: "1",
@@ -263,6 +293,23 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
         "change",
         () => {
           resolve(input.files?.[0] ?? null);
+        },
+        { once: true },
+      );
+      input.click();
+    });
+  }
+
+  function selectActivityDirectory(): Promise<FileList | null> {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      input.webkitdirectory = true;
+      input.addEventListener(
+        "change",
+        () => {
+          resolve(input.files);
         },
         { once: true },
       );
@@ -318,6 +365,16 @@ function createImportIcon(): string {
       <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5" />
       <path d="M2 19h7" />
       <path d="M5 16l-3 3l3 3" />
+    </svg>
+  `;
+}
+
+function createImportFolderIcon(): string {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5 19h14a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-7l-2 -2h-5a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2z" />
+      <path d="M12 11v6" />
+      <path d="M9 14l3 3l3 -3" />
     </svg>
   `;
 }

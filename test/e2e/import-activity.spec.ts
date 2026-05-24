@@ -11,7 +11,7 @@ test("imports an activity zip and renders a generated board", async ({ page }, t
   await expect(page.locator(".board-svg")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Import activity" }).click();
+  await page.getByRole("button", { name: "Import activity", exact: true }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(zipPath);
 
@@ -56,7 +56,7 @@ test("playing imported audio does not rotate the domino", async ({ page }, testI
   await expect(page.locator(".board-svg")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Import activity" }).click();
+  await page.getByRole("button", { name: "Import activity", exact: true }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(zipPath);
   await expect.poll(async () => (await page.evaluate(() => window.__DOMINO_TEST__.getState())).dominoes.length).toBe(3);
