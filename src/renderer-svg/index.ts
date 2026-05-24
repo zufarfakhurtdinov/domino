@@ -82,6 +82,7 @@ export class SvgRenderer {
 
       group.append(createDominoShadow(domino.width, domino.height));
       group.append(createDominoBase(domino.width, domino.height));
+      group.append(createDominoEdge(domino.width, domino.height));
       domino.halves.forEach((half) => {
         group.append(
           createHalfPath({
@@ -268,8 +269,8 @@ function createDominoShadow(width: number, height: number): SVGElement {
   return createRect({
     x: 2,
     y: 3,
-    width,
-    height,
+    width: width - 4,
+    height: height - 6,
     fill: THEME.shadowFill,
     rx: 10,
     ry: 10,
@@ -284,11 +285,24 @@ function createDominoBase(width: number, height: number): SVGElement {
     width,
     height,
     fill: THEME.tileFill,
-    stroke: THEME.tileStroke,
-    strokeWidth: 1.5,
     rx: 10,
     ry: 10,
     className: "domino-tile-base",
+  });
+}
+
+function createDominoEdge(width: number, height: number): SVGElement {
+  return createRect({
+    x: 1,
+    y: 1,
+    width: width - 2,
+    height: height - 2,
+    fill: "none",
+    stroke: THEME.tileStroke,
+    strokeWidth: 1.5,
+    rx: 9,
+    ry: 9,
+    className: "domino-tile-edge",
   });
 }
 
