@@ -25,6 +25,32 @@ test("imports an activity zip and renders a generated board", async ({ page }, t
   });
 });
 
+test("playing imported audio does not rotate the domino", async ({ page }, testInfo) => {
+  const zipPath = testInfo.outputPath("activity.zip");
+  await writeFile(zipPath, Buffer.from(await createActivityZip()));
+
+  await page.goto("/domino/");
+  await expect(page.locator(".board-svg")).toBeVisible();
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import activity" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(zipPath);
+  await expect.poll(async () => (await page.evaluate(() => window.__DOMINO_TEST__.getState())).dominoes.length).toBe(3);
+
+  await page.addInitScript(() => {
+    window.HTMLMediaElement.prototype.play = () => Promise.resolve();
+  });
+  const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  const audioDomino = stateBefore.dominoes.find((domino) => domino.a.content.type === "audio" || domino.b.content.type === "audio");
+  expect(audioDomino).toBeDefined();
+
+  await page.locator(`[data-domino-id="${audioDomino!.id}"] [aria-label="Play audio"]`).click();
+
+  const stateAfter = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(stateAfter.dominoes.find((domino) => domino.id === audioDomino!.id)?.rotation).toBe(audioDomino!.rotation);
+});
+
 async function createActivityZip(): Promise<ArrayBuffer> {
   const zip = new JSZip();
   zip.file(
