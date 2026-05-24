@@ -5,9 +5,10 @@ describe("app entry", () => {
     expect(resolveEntryMode("?mode=editor")).toBe("editor");
   });
 
-  it("keeps the existing renderer modes by default", () => {
-    expect(resolveEntryMode("")).toBe("svg");
+  it("uses the DOM renderer by default and keeps explicit renderer modes", () => {
+    expect(resolveEntryMode("")).toBe("dom");
     expect(resolveEntryMode("?renderer=dom")).toBe("dom");
     expect(resolveEntryMode("?mode=game&renderer=dom")).toBe("dom");
+    expect(resolveEntryMode("?renderer=svg")).toBe("svg");
   });
 });

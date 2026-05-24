@@ -46,6 +46,6 @@ npx tsc --noEmit
 ## Structure
 
 - `src/core/`: testable game logic for geometry, matching, slots, snap placement, links, and layout.
-- `src/main.ts`: browser entry that loads the SVG renderer by default, with `?renderer=dom` for the DOM renderer.
+- `src/main.ts`: browser entry that loads the DOM renderer by default, with `?renderer=svg` for the SVG renderer.
 - `src/renderer-svg/` and `src/renderer-dom/`: browser renderers.
 - `test/`: Vitest unit tests and Playwright browser tests.

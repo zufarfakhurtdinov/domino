@@ -7,5 +7,5 @@ export const resolveEntryMode = (search: string): EntryMode => {
     return "editor";
   }
 
-  return params.get("renderer") === "dom" ? "dom" : "svg";
+  return params.get("renderer") === "svg" ? "svg" : "dom";
 };
