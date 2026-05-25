@@ -15,16 +15,6 @@ Open:
 http://127.0.0.1:5173/
 ```
 
-Useful fixtures:
-
-```txt
-?fixture=demo
-?fixture=basic
-?fixture=snap
-?fixture=snap-rotated
-?fixture=linked
-```
-
 ## Slot System
 
 A slot is a connection opportunity on a domino where another matching domino half can attach. Slots include the half they belong to, the side they sit on, their geometric position, and whether that side is already occupied by a link.
@@ -46,6 +36,6 @@ npx tsc --noEmit
 ## Structure
 
 - `src/core/`: testable game logic for geometry, matching, slots, snap placement, links, and layout.
-- `src/main.ts`: browser entry that loads the DOM renderer by default, with `?renderer=svg` for the SVG renderer.
-- `src/renderer-svg/` and `src/renderer-dom/`: browser renderers.
+- `src/main.ts`: browser entry that loads the DOM renderer, with `?mode=editor` for the activity editor.
+- `src/renderer-dom/`: browser renderer.
 - `test/`: Vitest unit tests and Playwright browser tests.

@@ -1,25 +1,14 @@
 import { expect, test } from "@playwright/test";
 import JSZip from "jszip";
 import { writeFile } from "node:fs/promises";
-
-test("svg renderer uses the ivory ceramic and blue-gray felt style", async ({ page }) => {
-  await page.goto("/domino/?fixture=basic&renderer=svg");
-
-  await expect(page.locator(".board-svg")).toBeVisible();
-  await expect(page.locator(".board-background")).toHaveAttribute("href", /blue-gray-felt-background/);
-  await expect(page.locator(".board-background")).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
-  await expect(page.locator("[data-domino-id='cat'] .domino-tile-base")).toHaveCount(1);
-  await expect(page.locator("[data-domino-id='cat'] .domino-half-surface")).toHaveCount(2);
-  await expect(page.locator("[data-domino-id='cat'] .domino-divider")).toHaveCount(1);
-  await expect(page.locator("[data-domino-id='cat'] text").first()).toHaveAttribute("fill", "#27313a");
-});
+import { defaultDragDominoId, openBoard } from "./boards";
 
 test("dom renderer uses the same tabletop tile structure", async ({ page }) => {
-  await page.goto("/domino/?fixture=basic&renderer=dom");
+  await openBoard(page);
 
   await expect(page.locator(".board-dom")).toBeVisible();
-  await expect(page.locator("[data-domino-id='cat'] .domino-half")).toHaveCount(2);
-  await expect(page.locator("[data-domino-id='cat'] .domino-divider")).toHaveCount(1);
+  await expect(page.locator(`[data-domino-id='${defaultDragDominoId}'] .domino-half`)).toHaveCount(2);
+  await expect(page.locator(`[data-domino-id='${defaultDragDominoId}'] .domino-divider`)).toHaveCount(1);
 
   const boardStyle = await page.locator(".board-surface").evaluate((node) => {
     const style = window.getComputedStyle(node);
@@ -31,7 +20,7 @@ test("dom renderer uses the same tabletop tile structure", async ({ page }) => {
   expect(boardStyle.backgroundColor).toBe("rgb(105, 127, 132)");
   expect(boardStyle.backgroundImage).not.toBe("none");
 
-  const dominoStyle = await page.locator("[data-domino-id='cat']").evaluate((node) => {
+  const dominoStyle = await page.locator(`[data-domino-id='${defaultDragDominoId}']`).evaluate((node) => {
     const style = window.getComputedStyle(node);
     return {
       backgroundColor: style.backgroundColor,
@@ -44,12 +33,12 @@ test("dom renderer uses the same tabletop tile structure", async ({ page }) => {
   expect(dominoStyle.boxShadow).not.toBe("none");
 });
 
-test("svg media halves use inset image frames and muted audio controls", async ({ page }, testInfo) => {
+test("media halves use inset image frames and muted audio controls", async ({ page }, testInfo) => {
   const zipPath = testInfo.outputPath("activity.zip");
   await writeFile(zipPath, Buffer.from(await createMediaActivityZip()));
 
-  await page.goto("/domino/?renderer=svg");
-  await expect(page.locator(".board-svg")).toBeVisible();
+  await page.goto("/domino/");
+  await expect(page.locator(".board-dom")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import activity", exact: true }).click();
@@ -59,9 +48,11 @@ test("svg media halves use inset image frames and muted audio controls", async (
   await expect.poll(async () => (await page.evaluate(() => window.__DOMINO_TEST__.getState())).dominoes.length).toBe(2);
   await expect(page.locator(".domino-content-image-frame")).toHaveCount(2);
   await expect(page.locator(".domino-content-image")).toHaveCount(2);
-  await expect(page.locator(".domino-audio-button-svg .domino-audio-button-ring")).toHaveCount(1);
-  await expect(page.locator(".domino-audio-button-svg circle")).toHaveAttribute("fill", "#eee7d8");
-  await expect(page.locator(".domino-audio-button-svg path")).toHaveAttribute("fill", "#4f666d");
+  await expect(page.locator(".domino-audio-button")).toHaveCount(1);
+  await expect(page.locator(".domino-audio-button")).toHaveCSS(
+    "color",
+    "rgb(79, 102, 109)",
+  );
 });
 
 async function createMediaActivityZip(): Promise<ArrayBuffer> {
@@ -71,8 +62,20 @@ async function createMediaActivityZip(): Promise<ArrayBuffer> {
     JSON.stringify({
       title: "media style",
       pairs: [
-        { id: 1, items: [{ type: "text", value: "cat" }, { type: "image", src: "cat.png" }] },
-        { id: 2, items: [{ type: "audio", src: "dog.mp3" }, { type: "image", src: "dog.png" }] },
+        {
+          id: 1,
+          items: [
+            { type: "text", value: "cat" },
+            { type: "image", src: "cat.png" },
+          ],
+        },
+        {
+          id: 2,
+          items: [
+            { type: "audio", src: "dog.mp3" },
+            { type: "image", src: "dog.png" },
+          ],
+        },
       ],
     }),
   );

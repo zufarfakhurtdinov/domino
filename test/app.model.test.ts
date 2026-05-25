@@ -1,19 +1,16 @@
-import { canMatch } from "../src/core/matching";
 import { DOMINO_WIDTH, HALF_WIDTH, SNAP_GAP } from "../src/core/geometry";
 import { findSnapCandidate } from "../src/core/snapping";
-import { createFixtureBoard, pairs } from "../src/app/model";
+import { createDefaultBoard } from "../src/app/model";
 
-describe("app model fixtures", () => {
+describe("app model", () => {
   it("builds the default demo with original word dominoes and style preview dominoes", () => {
-    const state = createFixtureBoard(null);
+    const state = createDefaultBoard();
 
     expect(state.links).toEqual([]);
-    expect(
-      state.dominoes.slice(0, 6).map((domino) => [
-        domino.a.content.type === "text" ? domino.a.content.value : "",
-        domino.b.content.type === "text" ? domino.b.content.value : "",
-      ]),
-    ).toEqual([
+    expect(state.dominoes.slice(0, 6).map((domino) => [
+      domino.a.content.type === "text" ? domino.a.content.value : "",
+      domino.b.content.type === "text" ? domino.b.content.value : "",
+    ])).toEqual([
       ["one (1)", "two (2)"],
       ["two (2)", "three (3)"],
       ["one (1)", "two (2)"],
@@ -35,22 +32,8 @@ describe("app model fixtures", () => {
     expect(state.dominoes[8].b.content).toEqual({ type: "text", value: "five" });
   });
 
-  it("allows repeated demo words to match by hidden occurrence keys", () => {
-    const state = createFixtureBoard("demo");
-    const oneTwo = state.dominoes[0];
-    const twoThree = state.dominoes[1];
-    const fourFive = state.dominoes[3];
-    const oneFive = state.dominoes[4];
-    const threeSeven = state.dominoes[5];
-
-    expect(canMatch(oneTwo.b, twoThree.a, pairs)).toBe(true);
-    expect(canMatch(oneTwo.a, oneFive.a, pairs)).toBe(true);
-    expect(canMatch(fourFive.b, oneFive.b, pairs)).toBe(true);
-    expect(canMatch(twoThree.b, threeSeven.a, pairs)).toBe(true);
-  });
-
   it("lets the demo one-five domino snap to four-five on the five half", () => {
-    const state = createFixtureBoard("demo");
+    const state = createDefaultBoard();
     const fourFive = state.dominoes.find((domino) => domino.id === "four-five");
     expect(fourFive).toBeDefined();
 
@@ -73,7 +56,7 @@ describe("app model fixtures", () => {
   });
 
   it("lets the demo four-five domino snap to one-five on the five half", () => {
-    const state = createFixtureBoard("demo");
+    const state = createDefaultBoard();
     const oneFive = state.dominoes.find((domino) => domino.id === "one-five");
     expect(oneFive).toBeDefined();
 

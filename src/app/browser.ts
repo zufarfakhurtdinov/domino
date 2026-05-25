@@ -1,16 +1,16 @@
 import { commitDrop, commitPreviewDrop, detachFirstLink, SNAP_THRESHOLD } from "./actions";
-import { createFixtureBoard } from "./model";
+import { createDefaultBoard } from "./model";
 import { generateBoardFromActivity } from "../activity/generate-board";
 import { loadActivityDirectory } from "../activity/load-directory";
 import { loadActivityZip } from "../activity/load-zip";
 import type { LoadedActivity } from "../activity/types";
 import { detachDomino, rotateDomino } from "../core/board";
-import type { BoardState, Link, Point, SnapCandidate } from "../core/types";
+import type { BoardState, Point, SnapCandidate } from "../core/types";
+import { DomRenderer } from "../renderer-dom";
 import { createBoardView } from "../view/board-view";
 import { derivePreviewResult } from "../view/interaction";
 import { clampBoardScale, DEFAULT_BOARD_METRICS } from "../view/metrics";
 import { getVisualTransform } from "../view/transforms";
-import type { BoardView } from "../view/types";
 
 type DragSession = {
   dominoId: string;
@@ -18,24 +18,11 @@ type DragSession = {
   pointer: Point;
 };
 
-type RendererCallbacks = {
-  onDominoPointerDown: (dominoId: string, pointer: Point) => void;
-  onPointerMove: (pointer: Point) => void;
-  onPointerUp: () => void;
-  onRotate: (dominoId: string, pivot?: Point) => void;
-  onDetach: (link: Link) => void;
+type BootstrapDominoAppOptions = {
+  initialState?: BoardState;
 };
 
-type Renderer = {
-  render: (view: BoardView, width: number, height: number, scale: number) => void;
-};
-
-type RendererConstructor = new (
-  app: HTMLElement,
-  callbacks: RendererCallbacks,
-) => Renderer;
-
-export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
+export function bootstrapDominoApp(options: BootstrapDominoAppOptions = {}): void {
   const app = document.querySelector<HTMLDivElement>("#app");
   if (!app) {
     throw new Error("Missing #app container");
@@ -45,12 +32,12 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
   let stageWidth = 0;
   let stageHeight = 0;
   let boardScale = 1;
-  let state = createFixtureBoard(new URLSearchParams(window.location.search).get("fixture"));
+  let state = structuredClone(options.initialState ?? createDefaultBoard());
   let previewState: BoardState | null = null;
   let currentSnapCandidate: SnapCandidate | null = null;
   let dragSession: DragSession | null = null;
 
-  const renderer = new RendererClass(appContainer, {
+  const renderer = new DomRenderer(appContainer, {
     onDominoPointerDown(dominoId, pointer) {
       const domino = (previewState ?? state).dominoes.find((entry) => entry.id === dominoId);
       if (!domino) {
@@ -107,11 +94,6 @@ export function bootstrapDominoApp(RendererClass: RendererConstructor): void {
       }
 
       dragSession = null;
-      resetPreview();
-      render();
-    },
-    onRotate(dominoId, pivot) {
-      state = rotateDomino(state, dominoId, pivot);
       resetPreview();
       render();
     },

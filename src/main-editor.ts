@@ -1,5 +1,4 @@
 import { bootstrapActivityEditor } from "./editor/app";
-import "./styles.css";
 
 const root = document.getElementById("app");
 

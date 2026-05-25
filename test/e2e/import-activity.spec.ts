@@ -8,7 +8,7 @@ test("imports an activity zip and renders a generated board", async ({ page }, t
   await writeFile(zipPath, Buffer.from(await createActivityZip()));
 
   await page.goto("/domino/");
-  await expect(page.locator(".board-svg")).toBeVisible();
+  await expect(page.locator(".board-dom")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import activity", exact: true }).click();
@@ -30,7 +30,7 @@ test("imports an unpacked activity directory and renders a generated board", asy
   const directoryPath = await createActivityDirectory(testInfo.outputPath("activity"));
 
   await page.goto("/domino/");
-  await expect(page.locator(".board-svg")).toBeVisible();
+  await expect(page.locator(".board-dom")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import activity folder" }).click();
@@ -53,7 +53,7 @@ test("playing imported audio does not rotate the domino", async ({ page }, testI
   await writeFile(zipPath, Buffer.from(await createActivityZip()));
 
   await page.goto("/domino/");
-  await expect(page.locator(".board-svg")).toBeVisible();
+  await expect(page.locator(".board-dom")).toBeVisible();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import activity", exact: true }).click();

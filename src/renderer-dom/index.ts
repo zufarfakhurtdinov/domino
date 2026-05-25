@@ -1,5 +1,4 @@
-import type { Link, Point } from "../core/types";
-import type { Content } from "../core/types";
+import type { Content, Link, Point } from "../core/types";
 import type { BoardView } from "../view/types";
 import { getBoardSurfaceTransform, getDominoTransform } from "./styles";
 
@@ -7,7 +6,6 @@ type DomRendererCallbacks = {
   onDominoPointerDown: (dominoId: string, pointer: Point) => void;
   onPointerMove: (pointer: Point) => void;
   onPointerUp: () => void;
-  onRotate: (dominoId: string, pivot?: Point) => void;
   onDetach: (link: Link) => void;
 };
 

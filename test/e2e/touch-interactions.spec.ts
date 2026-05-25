@@ -3,165 +3,217 @@ import {
   getDominoBounds,
   getRectCenter,
   getRotationSize,
+  getTransformOrigin,
   HALF_HEIGHT,
   HALF_WIDTH,
   rotateClockwise,
   SNAP_GAP,
 } from "../../src/core/geometry";
 import type { Domino, Point } from "../../src/core/types";
+import {
+  defaultDragDominoId,
+  defaultLinkedDragDominoId,
+  defaultLinkedTargetDominoId,
+  getDefaultFiveSnapPosition,
+  getDomino,
+  linkDefaultFivePair,
+  openBoard,
+} from "./boards";
 
-const modes = [
-  { name: "svg", renderer: "svg", board: ".board-svg" },
-  { name: "dom", renderer: "dom", board: ".board-dom" },
-] as const;
+const dragDelta = { x: 40, y: 40 };
 
-for (const mode of modes) {
-  test(`${mode.name} touch tap rotates an unlinked domino`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const cat = stateBefore.dominoes.find((domino) => domino.id === "cat");
-    expect(cat).toBeDefined();
-    const localTapPoint = { x: 25, y: 75 };
-    const tapPoint = { x: cat!.x + localTapPoint.x, y: cat!.y + localTapPoint.y };
+test("touch tap rotates an unlinked domino", async ({ page }) => {
+  await openBoard(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const domino = getDomino(stateBefore, defaultDragDominoId);
+  const localTapPoint = { x: 25, y: 75 };
+  const tapPoint = { x: domino.x + localTapPoint.x, y: domino.y + localTapPoint.y };
 
-    await touchTap(page, `[data-domino-id='cat']`, toClientPoint(appBox, tapPoint));
+  await touchTap(
+    page,
+    `[data-domino-id='${defaultDragDominoId}']`,
+    toClientPoint(appBox, tapPoint),
+  );
 
-    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "cat")).toEqual(
-      rotateAroundPivot(cat!, tapPoint),
-    );
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((entry) => entry.id === defaultDragDominoId)).toEqual(
+    rotateAroundPivot(domino, tapPoint),
+  );
+});
+
+test("touch tap rotates a linked group", async ({ page }) => {
+  await openBoard(page);
+  await linkDefaultFivePair(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const dragged = getDomino(stateBefore, defaultLinkedDragDominoId);
+  const target = getDomino(stateBefore, defaultLinkedTargetDominoId);
+  const localTapPoint = { x: 25, y: 75 };
+  const tapPoint = {
+    x: dragged.x + localTapPoint.x,
+    y: dragged.y + localTapPoint.y,
+  };
+
+  await touchTap(
+    page,
+    `[data-domino-id='${defaultLinkedDragDominoId}']`,
+    toClientPoint(appBox, tapPoint),
+  );
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((domino) => domino.id === defaultLinkedDragDominoId)).toEqual(
+    rotateAroundPivot(dragged, tapPoint),
+  );
+  expect(state.dominoes.find((domino) => domino.id === defaultLinkedTargetDominoId)).toEqual(
+    rotateAroundPivot(target, tapPoint),
+  );
+  expect(state.links).toEqual([
+    {
+      dominoId1: defaultLinkedDragDominoId,
+      half1: "b",
+      dominoId2: defaultLinkedTargetDominoId,
+      half2: "b",
+    },
+  ]);
+});
+
+test("touch drag moves without rotating", async ({ page }) => {
+  await openBoard(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const domino = getDomino(stateBefore, defaultDragDominoId);
+  const start = { x: domino.x + HALF_WIDTH / 2, y: domino.y + HALF_HEIGHT / 2 };
+  const end = { x: start.x + dragDelta.x, y: start.y + dragDelta.y };
+
+  await touchDrag(
+    page,
+    `[data-domino-id='${defaultDragDominoId}']`,
+    ".board-dom",
+    toClientPoint(appBox, start),
+    toClientPoint(appBox, end),
+  );
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((entry) => entry.id === defaultDragDominoId)).toMatchObject({
+    x: domino.x + dragDelta.x,
+    y: domino.y + dragDelta.y,
+    rotation: domino.rotation,
   });
+});
 
-  test(`${mode.name} touch tap rotates a linked group`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=linked&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const dragged = stateBefore.dominoes.find((domino) => domino.id === "dragged");
-    const target = stateBefore.dominoes.find((domino) => domino.id === "target");
-    expect(dragged).toBeDefined();
-    expect(target).toBeDefined();
-    const localTapPoint = { x: 25, y: 75 };
-    const tapPoint = { x: dragged!.x + localTapPoint.x, y: dragged!.y + localTapPoint.y };
-
-    await touchTap(page, `[data-domino-id='dragged']`, toClientPoint(appBox, tapPoint));
-
-    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "dragged")).toEqual(
-      rotateAroundPivot(dragged!, tapPoint),
-    );
-    expect(state.dominoes.find((domino) => domino.id === "target")).toEqual(
-      rotateAroundPivot(target!, tapPoint),
-    );
-    expect(state.links).toEqual([
-      { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
-    ]);
+test("touch drag shows snap preview", async ({ page }) => {
+  await openBoard(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const dragged = getDomino(stateBefore, defaultLinkedDragDominoId);
+  const snappedPosition = getDefaultFiveSnapPosition(stateBefore);
+  const snappedTransform = getTransformOrigin({
+    ...dragged,
+    ...snappedPosition,
   });
+  const transform = getTransformOrigin(dragged);
+  const start = {
+    x: transform.x + HALF_WIDTH / 2,
+    y: transform.y + HALF_HEIGHT / 2,
+  };
+  const end = {
+    x: snappedTransform.x + 6 + HALF_WIDTH / 2,
+    y: snappedTransform.y + 4 + HALF_HEIGHT / 2,
+  };
 
-  test(`${mode.name} touch drag moves without rotating`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const cat = stateBefore.dominoes.find((domino) => domino.id === "cat");
-    expect(cat).toBeDefined();
-    const start = { x: cat!.x + HALF_WIDTH / 2, y: cat!.y + HALF_HEIGHT / 2 };
-    const end = { x: start.x + HALF_WIDTH, y: start.y + HALF_HEIGHT };
+  await touchDown(
+    page,
+    `[data-domino-id='${defaultLinkedDragDominoId}']`,
+    toClientPoint(appBox, start),
+  );
+  await touchMove(page, ".board-dom", toClientPoint(appBox, end));
 
-    await touchDrag(page, `[data-domino-id='cat']`, mode.board, toClientPoint(appBox, start), toClientPoint(appBox, end));
+  expect(
+    await page.evaluate(() => window.__DOMINO_TEST__.getSnapCandidate()),
+  ).not.toBeNull();
+  await expect(page.locator(".snap-highlight")).toBeVisible();
 
-    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "cat")).toMatchObject({
-      x: cat!.x + HALF_WIDTH,
-      y: cat!.y + HALF_HEIGHT,
-      rotation: cat!.rotation,
-    });
+  await touchUp(page, toClientPoint(appBox, end));
+});
+
+test("touch drop commits snap", async ({ page }) => {
+  await openBoard(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const dragged = getDomino(stateBefore, defaultLinkedDragDominoId);
+  const snappedPosition = getDefaultFiveSnapPosition(stateBefore);
+  const snappedTransform = getTransformOrigin({
+    ...dragged,
+    ...snappedPosition,
   });
+  const transform = getTransformOrigin(dragged);
+  const start = {
+    x: transform.x + HALF_WIDTH / 2,
+    y: transform.y + HALF_HEIGHT / 2,
+  };
+  const end = {
+    x: snappedTransform.x + 6 + HALF_WIDTH / 2,
+    y: snappedTransform.y + 4 + HALF_HEIGHT / 2,
+  };
 
-  test(`${mode.name} touch drag shows snap preview`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=snap&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const dragged = stateBefore.dominoes.find((domino) => domino.id === "dragged");
-    const target = stateBefore.dominoes.find((domino) => domino.id === "target");
-    expect(dragged).toBeDefined();
-    expect(target).toBeDefined();
-    const snappedPosition = {
-      x: target!.x + HALF_HEIGHT + SNAP_GAP,
-      y: target!.y,
-    };
-    const start = { x: dragged!.x + HALF_WIDTH / 2, y: dragged!.y + HALF_HEIGHT / 2 };
-    const end = {
-      x: snappedPosition.x + 6 + HALF_WIDTH / 2,
-      y: snappedPosition.y + 4 + HALF_HEIGHT / 2,
-    };
+  await touchDrag(
+    page,
+    `[data-domino-id='${defaultLinkedDragDominoId}']`,
+    ".board-dom",
+    toClientPoint(appBox, start),
+    toClientPoint(appBox, end),
+  );
 
-    await touchDown(page, `[data-domino-id='dragged']`, toClientPoint(appBox, start));
-    await touchMove(page, mode.board, toClientPoint(appBox, end));
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(
+    state.dominoes.find((domino) => domino.id === defaultLinkedDragDominoId),
+  ).toMatchObject(snappedPosition);
+  expect(state.links).toEqual([
+    {
+      dominoId1: defaultLinkedDragDominoId,
+      half1: "b",
+      dominoId2: defaultLinkedTargetDominoId,
+      half2: "b",
+    },
+  ]);
+});
 
-    expect(await page.evaluate(() => window.__DOMINO_TEST__.getSnapCandidate())).not.toBeNull();
-    await expect(page.locator(".snap-highlight")).toBeVisible();
+test("tiny touch movement currently counts as drag", async ({ page }) => {
+  await openBoard(page);
+  const appBox = await getAppBox(page);
+  const stateBefore = await page.evaluate(() =>
+    window.__DOMINO_TEST__.getState(),
+  );
+  const domino = getDomino(stateBefore, defaultDragDominoId);
+  const start = { x: domino.x + HALF_WIDTH / 2, y: domino.y + HALF_HEIGHT / 2 };
+  const end = { x: start.x + 1, y: start.y + 1 };
 
-    await touchUp(page, toClientPoint(appBox, end));
+  await touchDrag(
+    page,
+    `[data-domino-id='${defaultDragDominoId}']`,
+    ".board-dom",
+    toClientPoint(appBox, start),
+    toClientPoint(appBox, end),
+  );
+
+  const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
+  expect(state.dominoes.find((entry) => entry.id === defaultDragDominoId)).toMatchObject({
+    x: domino.x + 1,
+    y: domino.y + 1,
+    rotation: domino.rotation,
   });
-
-  test(`${mode.name} touch drop commits snap`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=snap&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const dragged = stateBefore.dominoes.find((domino) => domino.id === "dragged");
-    const target = stateBefore.dominoes.find((domino) => domino.id === "target");
-    expect(dragged).toBeDefined();
-    expect(target).toBeDefined();
-    const snappedPosition = {
-      x: target!.x + HALF_HEIGHT + SNAP_GAP,
-      y: target!.y,
-    };
-    const start = { x: dragged!.x + HALF_WIDTH / 2, y: dragged!.y + HALF_HEIGHT / 2 };
-    const end = {
-      x: snappedPosition.x + 6 + HALF_WIDTH / 2,
-      y: snappedPosition.y + 4 + HALF_HEIGHT / 2,
-    };
-
-    await touchDrag(
-      page,
-      `[data-domino-id='dragged']`,
-      mode.board,
-      toClientPoint(appBox, start),
-      toClientPoint(appBox, end),
-    );
-
-    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "dragged")).toMatchObject(snappedPosition);
-    expect(state.links).toEqual([
-      { dominoId1: "dragged", half1: "a", dominoId2: "target", half2: "a" },
-    ]);
-  });
-
-  test(`${mode.name} tiny touch movement currently counts as drag`, async ({ page }) => {
-    await page.goto(`/domino/?fixture=basic&renderer=${mode.renderer}`);
-    await page.waitForFunction(() => typeof window.__DOMINO_TEST__?.getState === "function");
-    const appBox = await getAppBox(page);
-    const stateBefore = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    const cat = stateBefore.dominoes.find((domino) => domino.id === "cat");
-    expect(cat).toBeDefined();
-    const start = { x: cat!.x + HALF_WIDTH / 2, y: cat!.y + HALF_HEIGHT / 2 };
-    const end = { x: start.x + 1, y: start.y + 1 };
-
-    await touchDrag(page, `[data-domino-id='cat']`, mode.board, toClientPoint(appBox, start), toClientPoint(appBox, end));
-
-    const state = await page.evaluate(() => window.__DOMINO_TEST__.getState());
-    expect(state.dominoes.find((domino) => domino.id === "cat")).toMatchObject({
-      x: cat!.x + 1,
-      y: cat!.y + 1,
-      rotation: cat!.rotation,
-    });
-  });
-}
+});
 
 async function getAppBox(page: Page) {
   const appBox = await page.locator("#app").boundingBox();
@@ -169,14 +221,21 @@ async function getAppBox(page: Page) {
   return appBox!;
 }
 
-function toClientPoint(appBox: { x: number; y: number }, boardPoint: Point): Point {
+function toClientPoint(
+  appBox: { x: number; y: number },
+  boardPoint: Point,
+): Point {
   return {
     x: appBox.x + boardPoint.x,
     y: appBox.y + boardPoint.y,
   };
 }
 
-async function touchTap(page: Page, selector: string, point: Point): Promise<void> {
+async function touchTap(
+  page: Page,
+  selector: string,
+  point: Point,
+): Promise<void> {
   await touchDown(page, selector, point);
   await touchUp(page, point);
 }
@@ -193,18 +252,29 @@ async function touchDrag(
   await touchUp(page, end);
 }
 
-async function touchDown(page: Page, selector: string, point: Point): Promise<void> {
+async function touchDown(
+  page: Page,
+  selector: string,
+  point: Point,
+): Promise<void> {
   await dispatchTouchPointer(page, selector, "pointerdown", point, 1);
 }
 
-async function touchMove(page: Page, selector: string, point: Point): Promise<void> {
+async function touchMove(
+  page: Page,
+  selector: string,
+  point: Point,
+): Promise<void> {
   await dispatchTouchPointer(page, selector, "pointermove", point, 1);
 }
 
 async function touchUp(page: Page, point: Point): Promise<void> {
-  await page.evaluate((eventInit) => {
-    window.dispatchEvent(new PointerEvent("pointerup", eventInit));
-  }, touchPointerEventInit(point, 0));
+  await page.evaluate(
+    (eventInit) => {
+      window.dispatchEvent(new PointerEvent("pointerup", eventInit));
+    },
+    touchPointerEventInit(point, 0),
+  );
 }
 
 async function dispatchTouchPointer(
@@ -214,10 +284,15 @@ async function dispatchTouchPointer(
   point: Point,
   buttons: number,
 ): Promise<void> {
-  await page.locator(selector).dispatchEvent(type, touchPointerEventInit(point, buttons));
+  await page
+    .locator(selector)
+    .dispatchEvent(type, touchPointerEventInit(point, buttons));
 }
 
-function touchPointerEventInit(point: Point, buttons: number): PointerEventInit {
+function touchPointerEventInit(
+  point: Point,
+  buttons: number,
+): PointerEventInit {
   return {
     bubbles: true,
     cancelable: true,
